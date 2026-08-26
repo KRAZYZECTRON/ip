@@ -1,9 +1,18 @@
 import java.util.Scanner;
 
+/**
+ * Entry point for the YY chatbot: a command-line task list that supports
+ * adding tasks, listing them, and marking them done or not done.
+ */
 public class YY {
     // Requirement caps storage at 100 tasks, so a fixed-size array is enough.
     private static final int MAX_TASKS = 100;
 
+    /**
+     * Starts YY and reads commands from standard input until "bye" is entered.
+     *
+     * @param args Not used.
+     */
     public static void main(String[] args) {
         String banner = "\\ \\      / /  \\ \\      / /\n"
                 + " \\ \\    / /    \\ \\    / / \n"
@@ -19,9 +28,7 @@ public class YY {
         System.out.println("What can I do for you?");
         System.out.println(line);
 
-        String[] tasks = new String[MAX_TASKS];
-        // Parallel to tasks: isDone[i] tracks whether tasks[i] is marked done.
-        boolean[] isDone = new boolean[MAX_TASKS];
+        Task[] tasks = new Task[MAX_TASKS];
         int taskCount = 0;
 
         // Read commands until the user types "bye". "list" shows stored tasks;
@@ -38,21 +45,20 @@ public class YY {
             } else if (input.equals("list")) {
                 System.out.println(" Here are the tasks in your list:");
                 for (int i = 0; i < taskCount; i++) {
-                    String statusIcon = isDone[i] ? "X" : " ";
-                    System.out.println(" " + (i + 1) + ".[" + statusIcon + "] " + tasks[i]);
+                    System.out.println(" " + (i + 1) + "." + tasks[i]);
                 }
             } else if (input.startsWith("mark ")) {
                 int index = Integer.parseInt(input.substring("mark ".length()).trim()) - 1;
-                isDone[index] = true;
+                tasks[index].markAsDone();
                 System.out.println(" Nice! I've marked this task as done:");
-                System.out.println("   [X] " + tasks[index]);
+                System.out.println("   " + tasks[index]);
             } else if (input.startsWith("unmark ")) {
                 int index = Integer.parseInt(input.substring("unmark ".length()).trim()) - 1;
-                isDone[index] = false;
+                tasks[index].markAsNotDone();
                 System.out.println(" OK, I've marked this task as not done yet:");
-                System.out.println("   [ ] " + tasks[index]);
+                System.out.println("   " + tasks[index]);
             } else {
-                tasks[taskCount] = input;
+                tasks[taskCount] = new Task(input);
                 taskCount++;
                 System.out.println(" added: " + input);
             }
