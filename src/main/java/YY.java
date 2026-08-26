@@ -25,8 +25,8 @@ public class YY {
         int taskCount = 0;
 
         // Read commands until the user types "bye". "list" shows stored tasks;
-        // "mark <index>" marks a task done; anything else is stored as a new
-        // task and echoed back.
+        // "mark <index>"/"unmark <index>" toggle a task's done status; anything
+        // else is stored as a new task and echoed back.
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
@@ -46,6 +46,11 @@ public class YY {
                 isDone[index] = true;
                 System.out.println(" Nice! I've marked this task as done:");
                 System.out.println("   [X] " + tasks[index]);
+            } else if (input.startsWith("unmark ")) {
+                int index = Integer.parseInt(input.substring("unmark ".length()).trim()) - 1;
+                isDone[index] = false;
+                System.out.println(" OK, I've marked this task as not done yet:");
+                System.out.println("   [ ] " + tasks[index]);
             } else {
                 tasks[taskCount] = input;
                 taskCount++;
