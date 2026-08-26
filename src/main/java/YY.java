@@ -1,6 +1,9 @@
 import java.util.Scanner;
 
 public class YY {
+    // Requirement caps storage at 100 tasks, so a fixed-size array is enough.
+    private static final int MAX_TASKS = 100;
+
     public static void main(String[] args) {
         String banner = "\\ \\      / /  \\ \\      / /\n"
                 + " \\ \\    / /    \\ \\    / / \n"
@@ -16,7 +19,11 @@ public class YY {
         System.out.println("What can I do for you?");
         System.out.println(line);
 
-        // Read commands until the user types "bye", echoing everything else back.
+        String[] tasks = new String[MAX_TASKS];
+        int taskCount = 0;
+
+        // Read commands until the user types "bye". "list" shows stored tasks;
+        // anything else is stored as a new task and echoed back.
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
@@ -25,8 +32,15 @@ public class YY {
                 System.out.println(" Bye. Hope to see you again soon!");
                 System.out.println(line);
                 break;
+            } else if (input.equals("list")) {
+                for (int i = 0; i < taskCount; i++) {
+                    System.out.println(" " + (i + 1) + ". " + tasks[i]);
+                }
+            } else {
+                tasks[taskCount] = input;
+                taskCount++;
+                System.out.println(" added: " + input);
             }
-            System.out.println(" " + input);
             System.out.println(line);
         }
         scanner.close();
