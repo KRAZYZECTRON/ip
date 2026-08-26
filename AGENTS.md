@@ -37,3 +37,5 @@ All Java code in this project (new or edited) must follow the [SE-EDU intermedia
 Use lightweight tags unless the user requests an annotated tag.
 When proposing or creating a commit message, include enough detail to explain the rationale for the change.
 Do not commit or push unless explicitly asked.
+
+All future commit messages must follow the [SE-EDU Git conventions](https://se-education.org/guides/conventions/git.html), as codified in the `seedu-git-standard` skill: imperative-mood subject line, subject/body formatting limits, and a body that explains what and why. Keep each commit scoped to one logical change.
