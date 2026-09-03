@@ -8,6 +8,20 @@ import java.util.Scanner;
 public class YY {
     private static final String LINE = "____________________________________________________________";
 
+    // The word the user types to choose a command.
+    private static final String COMMAND_BYE = "bye";
+    private static final String COMMAND_LIST = "list";
+    private static final String COMMAND_MARK = "mark";
+    private static final String COMMAND_UNMARK = "unmark";
+    private static final String COMMAND_TODO = "todo";
+    private static final String COMMAND_DEADLINE = "deadline";
+    private static final String COMMAND_EVENT = "event";
+
+    // The keyword that separates one argument of a command from the next.
+    private static final String KEYWORD_BY = " /by ";
+    private static final String KEYWORD_FROM = " /from ";
+    private static final String KEYWORD_TO = " /to ";
+
     /**
      * Starts YY and reads commands from standard input until "bye" is entered.
      *
@@ -37,27 +51,47 @@ public class YY {
      *         to exit.
      */
     private static boolean executeCommand(String input, TaskList tasks) {
-        if (input.equals("bye")) {
+        if (input.equals(COMMAND_BYE)) {
             System.out.println(" Bye. Hope to see you again soon!");
             return false;
         }
 
-        if (input.equals("list")) {
+        if (input.equals(COMMAND_LIST)) {
             printTasks(tasks);
-        } else if (input.startsWith("mark ")) {
-            markTask(input, tasks);
-        } else if (input.startsWith("unmark ")) {
-            unmarkTask(input, tasks);
-        } else if (input.startsWith("todo ")) {
-            addTodo(input, tasks);
-        } else if (input.startsWith("deadline ")) {
-            addDeadline(input, tasks);
-        } else if (input.startsWith("event ")) {
-            addEvent(input, tasks);
+        } else if (hasCommand(input, COMMAND_MARK)) {
+            markTask(getArguments(input, COMMAND_MARK), tasks);
+        } else if (hasCommand(input, COMMAND_UNMARK)) {
+            unmarkTask(getArguments(input, COMMAND_UNMARK), tasks);
+        } else if (hasCommand(input, COMMAND_TODO)) {
+            addTodo(getArguments(input, COMMAND_TODO), tasks);
+        } else if (hasCommand(input, COMMAND_DEADLINE)) {
+            addDeadline(getArguments(input, COMMAND_DEADLINE), tasks);
+        } else if (hasCommand(input, COMMAND_EVENT)) {
+            addEvent(getArguments(input, COMMAND_EVENT), tasks);
         } else {
             printUnknownCommand();
         }
         return true;
+    }
+
+    /**
+     * Returns true if the input is the given command word followed by arguments.
+     *
+     * @param input Whole line the user typed.
+     * @param commandWord Command word to look for, such as "todo".
+     */
+    private static boolean hasCommand(String input, String commandWord) {
+        return input.startsWith(commandWord + " ");
+    }
+
+    /**
+     * Returns the part of the input that follows the command word.
+     *
+     * @param input Whole line the user typed.
+     * @param commandWord Command word the input starts with.
+     */
+    private static String getArguments(String input, String commandWord) {
+        return input.substring(commandWord.length()).trim();
     }
 
     /**
@@ -93,11 +127,11 @@ public class YY {
     /**
      * Marks the task named by a "mark &lt;task number&gt;" command as done.
      *
-     * @param input Whole line the user typed.
+     * @param arguments Task number the user typed.
      * @param tasks List holding the task to mark.
      */
-    private static void markTask(String input, TaskList tasks) {
-        int taskNumber = Integer.parseInt(input.substring("mark ".length()).trim());
+    private static void markTask(String arguments, TaskList tasks) {
+        int taskNumber = Integer.parseInt(arguments);
         Task task = tasks.get(taskNumber);
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
@@ -107,11 +141,11 @@ public class YY {
     /**
      * Marks the task named by an "unmark &lt;task number&gt;" command as not done.
      *
-     * @param input Whole line the user typed.
+     * @param arguments Task number the user typed.
      * @param tasks List holding the task to unmark.
      */
-    private static void unmarkTask(String input, TaskList tasks) {
-        int taskNumber = Integer.parseInt(input.substring("unmark ".length()).trim());
+    private static void unmarkTask(String arguments, TaskList tasks) {
+        int taskNumber = Integer.parseInt(arguments);
         Task task = tasks.get(taskNumber);
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
@@ -121,26 +155,24 @@ public class YY {
     /**
      * Adds the to-do described by a "todo &lt;description&gt;" command.
      *
-     * @param input Whole line the user typed.
+     * @param arguments Description the user typed.
      * @param tasks List to add the task to.
      */
-    private static void addTodo(String input, TaskList tasks) {
-        String description = input.substring("todo ".length()).trim();
-        addTask(new Todo(description), tasks);
+    private static void addTodo(String arguments, TaskList tasks) {
+        addTask(new Todo(arguments), tasks);
     }
 
     /**
      * Adds the deadline described by a
      * "deadline &lt;description&gt; /by &lt;when&gt;" command.
      *
-     * @param input Whole line the user typed.
+     * @param arguments Description and due date/time the user typed.
      * @param tasks List to add the task to.
      */
-    private static void addDeadline(String input, TaskList tasks) {
-        String arguments = input.substring("deadline ".length());
-        int byIndex = arguments.indexOf(" /by ");
+    private static void addDeadline(String arguments, TaskList tasks) {
+        int byIndex = arguments.indexOf(KEYWORD_BY);
         String description = arguments.substring(0, byIndex).trim();
-        String by = arguments.substring(byIndex + " /by ".length()).trim();
+        String by = arguments.substring(byIndex + KEYWORD_BY.length()).trim();
         addTask(new Deadline(description, by), tasks);
     }
 
@@ -148,16 +180,15 @@ public class YY {
      * Adds the event described by an
      * "event &lt;description&gt; /from &lt;start&gt; /to &lt;end&gt;" command.
      *
-     * @param input Whole line the user typed.
+     * @param arguments Description, start and end date/time the user typed.
      * @param tasks List to add the task to.
      */
-    private static void addEvent(String input, TaskList tasks) {
-        String arguments = input.substring("event ".length());
-        int fromIndex = arguments.indexOf(" /from ");
-        int toIndex = arguments.indexOf(" /to ");
+    private static void addEvent(String arguments, TaskList tasks) {
+        int fromIndex = arguments.indexOf(KEYWORD_FROM);
+        int toIndex = arguments.indexOf(KEYWORD_TO);
         String description = arguments.substring(0, fromIndex).trim();
-        String from = arguments.substring(fromIndex + " /from ".length(), toIndex).trim();
-        String to = arguments.substring(toIndex + " /to ".length()).trim();
+        String from = arguments.substring(fromIndex + KEYWORD_FROM.length(), toIndex).trim();
+        String to = arguments.substring(toIndex + KEYWORD_TO.length()).trim();
         addTask(new Event(description, from, to), tasks);
     }
 
