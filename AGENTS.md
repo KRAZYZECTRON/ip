@@ -39,3 +39,21 @@ When proposing or creating a commit message, include enough detail to explain th
 Do not commit or push unless explicitly asked.
 
 All future commit messages must follow the [SE-EDU Git conventions](https://se-education.org/guides/conventions/git.html), as codified in the `seedu-git-standard` skill: imperative-mood subject line, subject/body formatting limits, and a body that explains what and why. Keep each commit scoped to one logical change.
+
+## Testing
+
+The chatbot is tested through its text UI: lists of commands are fed to the
+program on standard input and the console output is compared against the
+expected output. The test cases live in `test/ui-test-plan.md` and are run by
+the `test-ui` skill.
+
+After **every** update to the code in `src/`, in this order:
+
+1. Update `test/ui-test-plan.md` if the change adds, removes or reworks any
+   user-visible behaviour: add a test case for new behaviour, and correct the
+   expected output of any test case the change makes obsolete. Do this before
+   running the tests, so the run proves the intended behaviour rather than
+   merely recording whatever the program now prints.
+2. Invoke the `test-ui` skill and let it run the whole suite.
+3. Show the console session record it produces, and do not report the change as
+   done while any test case fails.
