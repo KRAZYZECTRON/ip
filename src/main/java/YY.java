@@ -60,7 +60,7 @@ public class YY {
                 System.out.println("   " + tasks[index]);
             } else if (input.startsWith("todo ")) {
                 String description = input.substring("todo ".length()).trim();
-                tasks[taskCount] = Task.createTodo(description);
+                tasks[taskCount] = new Todo(description);
                 taskCount++;
                 printAddedTask(tasks[taskCount - 1], taskCount);
             } else if (input.startsWith("deadline ")) {
@@ -69,7 +69,7 @@ public class YY {
                 int byIndex = arguments.indexOf(" /by ");
                 String description = arguments.substring(0, byIndex).trim();
                 String by = arguments.substring(byIndex + " /by ".length()).trim();
-                tasks[taskCount] = Task.createDeadline(description, by);
+                tasks[taskCount] = new Deadline(description, by);
                 taskCount++;
                 printAddedTask(tasks[taskCount - 1], taskCount);
             } else if (input.startsWith("event ")) {
@@ -80,7 +80,7 @@ public class YY {
                 String description = arguments.substring(0, fromIndex).trim();
                 String from = arguments.substring(fromIndex + " /from ".length(), toIndex).trim();
                 String to = arguments.substring(toIndex + " /to ".length()).trim();
-                tasks[taskCount] = Task.createEvent(description, from, to);
+                tasks[taskCount] = new Event(description, from, to);
                 taskCount++;
                 printAddedTask(tasks[taskCount - 1], taskCount);
             } else {
