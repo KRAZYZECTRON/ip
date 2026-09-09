@@ -189,6 +189,45 @@ public class Verity {
     }
 
     /**
+     * Returns the task that a "mark" or "unmark" command names.
+     *
+     * @param arguments Text the user typed after the command word.
+     * @param commandWord Command the number belongs to, named in the message
+     *                    shown if the number cannot be read.
+     * @param tasks List to look the task up in.
+     * @return The task at the number the user typed.
+     * @throws VerityException If the number is missing, is not a number, or
+     *                         does not name a task in the list.
+     */
+    private static Task findTask(String arguments, String commandWord, TaskList tasks)
+            throws VerityException {
+        int taskNumber = readTaskNumber(arguments, commandWord);
+        if (!tasks.contains(taskNumber)) {
+            throw new VerityException(describeMissingTask(taskNumber, tasks));
+        }
+        return tasks.get(taskNumber);
+    }
+
+    /**
+     * Returns the explanation shown when a task number does not name a task,
+     * telling the user which numbers they can use instead.
+     *
+     * @param taskNumber Number the user asked for.
+     * @param tasks List the number was looked up in.
+     */
+    private static String describeMissingTask(int taskNumber, TaskList tasks) {
+        if (tasks.size() == 0) {
+            return "There is no task " + taskNumber + ", because your list is empty.\n"
+                    + EXAMPLE_TODO;
+        }
+        String range = (tasks.size() == 1)
+                ? "You have 1 task, numbered 1."
+                : "You have " + tasks.size() + " tasks, numbered 1 to " + tasks.size() + ".";
+        return "There is no task " + taskNumber + ". " + range + "\n"
+                + "Try: list";
+    }
+
+    /**
      * Prints the banner and welcome message shown when Verity starts.
      */
     private static void printGreeting() {
@@ -215,11 +254,11 @@ public class Verity {
      *
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to mark.
-     * @throws VerityException If the task number is missing or unreadable.
+     * @throws VerityException If the task number is missing, unreadable, or
+     *                         does not name a task in the list.
      */
     private static void markTask(String arguments, TaskList tasks) throws VerityException {
-        int taskNumber = readTaskNumber(arguments, COMMAND_MARK);
-        Task task = tasks.get(taskNumber);
+        Task task = findTask(arguments, COMMAND_MARK, tasks);
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
         System.out.println("   " + task);
@@ -230,11 +269,11 @@ public class Verity {
      *
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to unmark.
-     * @throws VerityException If the task number is missing or unreadable.
+     * @throws VerityException If the task number is missing, unreadable, or
+     *                         does not name a task in the list.
      */
     private static void unmarkTask(String arguments, TaskList tasks) throws VerityException {
-        int taskNumber = readTaskNumber(arguments, COMMAND_UNMARK);
-        Task task = tasks.get(taskNumber);
+        Task task = findTask(arguments, COMMAND_UNMARK, tasks);
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
         System.out.println("   " + task);
@@ -344,8 +383,14 @@ public class Verity {
      *
      * @param task Task to add.
      * @param tasks List to add the task to.
+     * @throws VerityException If the list is already full.
      */
-    private static void addTask(Task task, TaskList tasks) {
+    private static void addTask(Task task, TaskList tasks) throws VerityException {
+        if (tasks.isFull()) {
+            throw new VerityException("Your list is full at " + tasks.size()
+                    + " tasks, so I can't add another one.\n"
+                    + "There is no way to remove a task yet, so that is as many as I can hold.");
+        }
         tasks.add(task);
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);
