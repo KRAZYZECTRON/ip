@@ -418,3 +418,226 @@ ____________________________________________________________
 ____________________________________________________________
 {{FAREWELL}}
 ```
+
+### TC-13 Reject a todo with no description
+
+**Aim:** Verify that `todo` without a description is refused with a message naming what is missing, and that a valid `todo` between two refused ones is still the only task in the list.
+
+**Input:**
+
+```text
+todo
+todo read book
+todo   
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ A todo needs a description saying what to do.
+ Try: todo borrow book
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ A todo needs a description saying what to do.
+ Try: todo borrow book
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-14 Reject an incomplete deadline
+
+**Aim:** Verify that each way of getting `deadline` wrong — nothing after the command word, no `/by`, no description before the `/by`, no date after the `/by` — is refused with its own message, and that none of the four is stored.
+
+**Input:**
+
+```text
+deadline
+deadline return book
+deadline /by Sunday
+deadline return book /by
+deadline return book /by Sunday
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ A deadline needs a description and a due date.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ I can't tell when "return book" is due. Mark the due date with /by.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ A deadline needs a description before the /by.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ A deadline needs a due date after the /by.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: Sunday)
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[D][ ] return book (by: Sunday)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-15 Reject an incomplete event
+
+**Aim:** Verify that every way of getting `event` wrong is refused with its own message, including `/to` typed before `/from`, and that only the one correct event ends up in the list.
+
+**Input:**
+
+```text
+event
+event project meeting
+event project meeting /to 4pm /from Mon 2pm
+event /from Mon 2pm /to 4pm
+event project meeting /from /to 4pm
+event project meeting /from Mon 2pm /to
+event project meeting /from Mon 2pm /to 4pm
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ An event needs a description, a start and an end.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ I can't tell when "project meeting" starts. Mark the start with /from.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ An event needs an end, marked with /to after the /from.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ An event needs a description before the /from.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ An event needs a start after the /from.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ An event needs an end after the /to.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [E][ ] project meeting (from: Mon 2pm to: 4pm)
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[E][ ] project meeting (from: Mon 2pm to: 4pm)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-16 Reject a mark or unmark with no readable task number
+
+**Aim:** Verify that `mark` and `unmark` without a number, or with something that is not a number, are refused with a message naming the command, and that a valid `mark` afterwards still works.
+
+**Input:**
+
+```text
+todo read book
+mark
+mark abc
+unmark
+mark 1
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Tell me which task to mark, by its number.
+ Try: mark 1
+____________________________________________________________
+____________________________________________________________
+ "abc" is not a task number.
+ Try: mark 1
+____________________________________________________________
+____________________________________________________________
+ Tell me which task to unmark, by its number.
+ Try: unmark 1
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] read book
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-17 Reject extra words after a command that takes none
+
+**Aim:** Verify that `list` and `bye` complain about anything typed after them instead of silently ignoring it, and that `bye` with extra words does not end the session.
+
+**Input:**
+
+```text
+list now
+bye now
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ The list command takes nothing after it, but you added "now".
+ Try: list
+____________________________________________________________
+____________________________________________________________
+ The bye command takes nothing after it, but you added "now".
+ Try: bye
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+____________________________________________________________
+{{FAREWELL}}
+```
