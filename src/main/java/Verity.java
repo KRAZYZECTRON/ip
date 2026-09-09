@@ -31,10 +31,23 @@ public class Verity {
     private static final String COMMAND_DEADLINE = "deadline";
     private static final String COMMAND_EVENT = "event";
 
-    // The keyword that separates one argument of a command from the next.
-    private static final String KEYWORD_BY = " /by ";
-    private static final String KEYWORD_FROM = " /from ";
-    private static final String KEYWORD_TO = " /to ";
+    // The keyword that separates one argument of a command from the next. The
+    // surrounding spaces are deliberately not part of the keyword: a command
+    // that stops right after it, such as "deadline homework /by", can then be
+    // reported as a missing due date rather than as a missing /by.
+    private static final String KEYWORD_BY = "/by";
+    private static final String KEYWORD_FROM = "/from";
+    private static final String KEYWORD_TO = "/to";
+
+    /** Reminder of the commands on offer, added to messages that reject input. */
+    private static final String COMMAND_HINT =
+            "Try: todo, deadline, event, list, mark, unmark, bye.";
+
+    // A correct example of each command that takes arguments, shown alongside
+    // the complaint when the user's attempt at that command could not be read.
+    private static final String EXAMPLE_TODO = "Try: todo borrow book";
+    private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
+    private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
 
     /**
      * Starts Verity and reads commands from standard input until "bye" is entered.
@@ -51,10 +64,28 @@ public class Verity {
         while (isRunning) {
             String input = scanner.nextLine();
             System.out.println(LINE);
-            isRunning = executeCommand(input, tasks);
+            try {
+                // Spaces around the command are the user's slip, not a command
+                // of their own, so they are dropped before anything is read.
+                isRunning = executeCommand(input.trim(), tasks);
+            } catch (VerityException e) {
+                printError(e);
+            }
             System.out.println(LINE);
         }
         scanner.close();
+    }
+
+    /**
+     * Prints the explanation carried by a rejected command, laid out like every
+     * other reply: one line at a time, each indented by a single space.
+     *
+     * @param error Exception describing what was wrong with the input.
+     */
+    private static void printError(VerityException error) {
+        for (String line : error.getMessage().split("\n")) {
+            System.out.println(" " + line);
+        }
     }
 
     /**
@@ -78,49 +109,122 @@ public class Verity {
      * @param tasks List of tasks the command works on.
      * @return True if Verity should keep reading commands, false if the user
      *         asked to exit.
+     * @throws VerityException If the input is not a command that can be carried
+     *                         out.
      */
-    private static boolean executeCommand(String input, TaskList tasks) {
-        if (input.equals(COMMAND_BYE)) {
+    private static boolean executeCommand(String input, TaskList tasks) throws VerityException {
+        if (input.isEmpty()) {
+            throw new VerityException("You pressed enter without typing a command.\n" + COMMAND_HINT);
+        }
+
+        // Everything up to the first space chooses the command; whatever
+        // follows is that command's arguments. Splitting here rather than
+        // inside each command means a command word typed on its own reaches
+        // its own method, which can then explain what it is missing.
+        int firstSpace = input.indexOf(' ');
+        String commandWord = (firstSpace < 0) ? input : input.substring(0, firstSpace);
+        String arguments = (firstSpace < 0) ? "" : input.substring(firstSpace + 1).trim();
+
+        if (commandWord.equals(COMMAND_BYE)) {
+            requireNoArguments(arguments, COMMAND_BYE);
             System.out.println(" Bye. Hope to see you again soon!");
             return false;
         }
 
-        if (input.equals(COMMAND_LIST)) {
+        if (commandWord.equals(COMMAND_LIST)) {
+            requireNoArguments(arguments, COMMAND_LIST);
             printTasks(tasks);
-        } else if (hasCommand(input, COMMAND_MARK)) {
-            markTask(getArguments(input, COMMAND_MARK), tasks);
-        } else if (hasCommand(input, COMMAND_UNMARK)) {
-            unmarkTask(getArguments(input, COMMAND_UNMARK), tasks);
-        } else if (hasCommand(input, COMMAND_TODO)) {
-            addTodo(getArguments(input, COMMAND_TODO), tasks);
-        } else if (hasCommand(input, COMMAND_DEADLINE)) {
-            addDeadline(getArguments(input, COMMAND_DEADLINE), tasks);
-        } else if (hasCommand(input, COMMAND_EVENT)) {
-            addEvent(getArguments(input, COMMAND_EVENT), tasks);
+        } else if (commandWord.equals(COMMAND_MARK)) {
+            markTask(arguments, tasks);
+        } else if (commandWord.equals(COMMAND_UNMARK)) {
+            unmarkTask(arguments, tasks);
+        } else if (commandWord.equals(COMMAND_TODO)) {
+            addTodo(arguments, tasks);
+        } else if (commandWord.equals(COMMAND_DEADLINE)) {
+            addDeadline(arguments, tasks);
+        } else if (commandWord.equals(COMMAND_EVENT)) {
+            addEvent(arguments, tasks);
         } else {
-            printUnknownCommand();
+            throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
         }
         return true;
     }
 
     /**
-     * Returns true if the input is the given command word followed by arguments.
+     * Checks that a command which takes no arguments was given none.
      *
-     * @param input Whole line the user typed.
-     * @param commandWord Command word to look for, such as "todo".
+     * @param arguments Text the user typed after the command word.
+     * @param commandWord Command that was typed, named in the message shown.
+     * @throws VerityException If anything was typed after the command word.
      */
-    private static boolean hasCommand(String input, String commandWord) {
-        return input.startsWith(commandWord + " ");
+    private static void requireNoArguments(String arguments, String commandWord) throws VerityException {
+        if (!arguments.isEmpty()) {
+            throw new VerityException("The " + commandWord + " command takes nothing after it,"
+                    + " but you added \"" + arguments + "\".\n"
+                    + "Try: " + commandWord);
+        }
     }
 
     /**
-     * Returns the part of the input that follows the command word.
+     * Reads the task number a "mark" or "unmark" command was given.
      *
-     * @param input Whole line the user typed.
-     * @param commandWord Command word the input starts with.
+     * @param arguments Text the user typed after the command word.
+     * @param commandWord Command the number belongs to, named in the message
+     *                    shown if it cannot be read.
+     * @return The task number the user typed.
+     * @throws VerityException If no number was given, or what was given is not
+     *                         a whole number.
      */
-    private static String getArguments(String input, String commandWord) {
-        return input.substring(commandWord.length()).trim();
+    private static int readTaskNumber(String arguments, String commandWord) throws VerityException {
+        if (arguments.isEmpty()) {
+            throw new VerityException("Tell me which task to " + commandWord + ", by its number.\n"
+                    + "Try: " + commandWord + " 1");
+        }
+        try {
+            return Integer.parseInt(arguments);
+        } catch (NumberFormatException e) {
+            throw new VerityException("\"" + arguments + "\" is not a task number.\n"
+                    + "Try: " + commandWord + " 1");
+        }
+    }
+
+    /**
+     * Returns the task that a "mark" or "unmark" command names.
+     *
+     * @param arguments Text the user typed after the command word.
+     * @param commandWord Command the number belongs to, named in the message
+     *                    shown if the number cannot be read.
+     * @param tasks List to look the task up in.
+     * @return The task at the number the user typed.
+     * @throws VerityException If the number is missing, is not a number, or
+     *                         does not name a task in the list.
+     */
+    private static Task findTask(String arguments, String commandWord, TaskList tasks)
+            throws VerityException {
+        int taskNumber = readTaskNumber(arguments, commandWord);
+        if (!tasks.contains(taskNumber)) {
+            throw new VerityException(describeMissingTask(taskNumber, tasks));
+        }
+        return tasks.get(taskNumber);
+    }
+
+    /**
+     * Returns the explanation shown when a task number does not name a task,
+     * telling the user which numbers they can use instead.
+     *
+     * @param taskNumber Number the user asked for.
+     * @param tasks List the number was looked up in.
+     */
+    private static String describeMissingTask(int taskNumber, TaskList tasks) {
+        if (tasks.size() == 0) {
+            return "There is no task " + taskNumber + ", because your list is empty.\n"
+                    + EXAMPLE_TODO;
+        }
+        String range = (tasks.size() == 1)
+                ? "You have 1 task, numbered 1."
+                : "You have " + tasks.size() + " tasks, numbered 1 to " + tasks.size() + ".";
+        return "There is no task " + taskNumber + ". " + range + "\n"
+                + "Try: list";
     }
 
     /**
@@ -150,10 +254,11 @@ public class Verity {
      *
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to mark.
+     * @throws VerityException If the task number is missing, unreadable, or
+     *                         does not name a task in the list.
      */
-    private static void markTask(String arguments, TaskList tasks) {
-        int taskNumber = Integer.parseInt(arguments);
-        Task task = tasks.get(taskNumber);
+    private static void markTask(String arguments, TaskList tasks) throws VerityException {
+        Task task = findTask(arguments, COMMAND_MARK, tasks);
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
         System.out.println("   " + task);
@@ -164,10 +269,11 @@ public class Verity {
      *
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to unmark.
+     * @throws VerityException If the task number is missing, unreadable, or
+     *                         does not name a task in the list.
      */
-    private static void unmarkTask(String arguments, TaskList tasks) {
-        int taskNumber = Integer.parseInt(arguments);
-        Task task = tasks.get(taskNumber);
+    private static void unmarkTask(String arguments, TaskList tasks) throws VerityException {
+        Task task = findTask(arguments, COMMAND_UNMARK, tasks);
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
         System.out.println("   " + task);
@@ -178,8 +284,13 @@ public class Verity {
      *
      * @param arguments Description the user typed.
      * @param tasks List to add the task to.
+     * @throws VerityException If no description was given.
      */
-    private static void addTodo(String arguments, TaskList tasks) {
+    private static void addTodo(String arguments, TaskList tasks) throws VerityException {
+        if (arguments.isEmpty()) {
+            throw new VerityException("A todo needs a description saying what to do.\n"
+                    + EXAMPLE_TODO);
+        }
         addTask(new Todo(arguments), tasks);
     }
 
@@ -189,11 +300,32 @@ public class Verity {
      *
      * @param arguments Description and due date/time the user typed.
      * @param tasks List to add the task to.
+     * @throws VerityException If the description, the /by keyword or the due
+     *                         date is missing.
      */
-    private static void addDeadline(String arguments, TaskList tasks) {
+    private static void addDeadline(String arguments, TaskList tasks) throws VerityException {
+        if (arguments.isEmpty()) {
+            throw new VerityException("A deadline needs a description and a due date.\n"
+                    + EXAMPLE_DEADLINE);
+        }
+
         int byIndex = arguments.indexOf(KEYWORD_BY);
+        if (byIndex < 0) {
+            throw new VerityException("I can't tell when \"" + arguments + "\" is due."
+                    + " Mark the due date with /by.\n"
+                    + EXAMPLE_DEADLINE);
+        }
+
         String description = arguments.substring(0, byIndex).trim();
         String by = arguments.substring(byIndex + KEYWORD_BY.length()).trim();
+        if (description.isEmpty()) {
+            throw new VerityException("A deadline needs a description before the /by.\n"
+                    + EXAMPLE_DEADLINE);
+        }
+        if (by.isEmpty()) {
+            throw new VerityException("A deadline needs a due date after the /by.\n"
+                    + EXAMPLE_DEADLINE);
+        }
         addTask(new Deadline(description, by), tasks);
     }
 
@@ -203,13 +335,46 @@ public class Verity {
      *
      * @param arguments Description, start and end date/time the user typed.
      * @param tasks List to add the task to.
+     * @throws VerityException If the description, either keyword, the start or
+     *                         the end is missing, or the two keywords are the
+     *                         wrong way round.
      */
-    private static void addEvent(String arguments, TaskList tasks) {
+    private static void addEvent(String arguments, TaskList tasks) throws VerityException {
+        if (arguments.isEmpty()) {
+            throw new VerityException("An event needs a description, a start and an end.\n"
+                    + EXAMPLE_EVENT);
+        }
+
         int fromIndex = arguments.indexOf(KEYWORD_FROM);
-        int toIndex = arguments.indexOf(KEYWORD_TO);
+        if (fromIndex < 0) {
+            throw new VerityException("I can't tell when \"" + arguments + "\" starts."
+                    + " Mark the start with /from.\n"
+                    + EXAMPLE_EVENT);
+        }
+
+        // The end is looked for only after the start, so that "/to" typed
+        // before "/from" is reported instead of being read the wrong way round.
+        int toIndex = arguments.indexOf(KEYWORD_TO, fromIndex);
+        if (toIndex < 0) {
+            throw new VerityException("An event needs an end, marked with /to after the /from.\n"
+                    + EXAMPLE_EVENT);
+        }
+
         String description = arguments.substring(0, fromIndex).trim();
         String from = arguments.substring(fromIndex + KEYWORD_FROM.length(), toIndex).trim();
         String to = arguments.substring(toIndex + KEYWORD_TO.length()).trim();
+        if (description.isEmpty()) {
+            throw new VerityException("An event needs a description before the /from.\n"
+                    + EXAMPLE_EVENT);
+        }
+        if (from.isEmpty()) {
+            throw new VerityException("An event needs a start after the /from.\n"
+                    + EXAMPLE_EVENT);
+        }
+        if (to.isEmpty()) {
+            throw new VerityException("An event needs an end after the /to.\n"
+                    + EXAMPLE_EVENT);
+        }
         addTask(new Event(description, from, to), tasks);
     }
 
@@ -218,19 +383,17 @@ public class Verity {
      *
      * @param task Task to add.
      * @param tasks List to add the task to.
+     * @throws VerityException If the list is already full.
      */
-    private static void addTask(Task task, TaskList tasks) {
+    private static void addTask(Task task, TaskList tasks) throws VerityException {
+        if (tasks.isFull()) {
+            throw new VerityException("Your list is full at " + tasks.size()
+                    + " tasks, so I can't add another one.\n"
+                    + "There is no way to remove a task yet, so that is as many as I can hold.");
+        }
         tasks.add(task);
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);
         System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
-    }
-
-    /**
-     * Tells the user that their input was not one of the known commands.
-     */
-    private static void printUnknownCommand() {
-        System.out.println(" Sorry, I don't know what that means.");
-        System.out.println(" Try: todo, deadline, event, list, mark, unmark, bye.");
     }
 }

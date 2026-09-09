@@ -33,6 +33,23 @@ public class TaskList {
     }
 
     /**
+     * Returns true if the given task number names a task that is in the list.
+     *
+     * @param taskNumber Position of the task as shown by the "list" command,
+     *                   counting from 1.
+     */
+    public boolean contains(int taskNumber) {
+        return taskNumber >= 1 && taskNumber <= taskCount;
+    }
+
+    /**
+     * Returns true if the list has no room for another task.
+     */
+    public boolean isFull() {
+        return taskCount == MAX_TASKS;
+    }
+
+    /**
      * Returns how many tasks the list holds.
      */
     public int size() {
