@@ -1,3 +1,5 @@
+package verity.task;
+
 /**
  * The list of tasks the user is keeping track of.
  *

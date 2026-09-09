@@ -1,3 +1,5 @@
+package verity;
+
 /**
  * Signals that something the user typed cannot be carried out, and carries the
  * explanation to show them.

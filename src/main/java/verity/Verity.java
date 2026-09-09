@@ -1,8 +1,16 @@
+package verity;
+
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+
+import verity.task.Deadline;
+import verity.task.Event;
+import verity.task.Task;
+import verity.task.TaskList;
+import verity.task.Todo;
 
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports

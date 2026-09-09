@@ -34,7 +34,7 @@ Other forms:
 The last form is for an ad-hoc check of a list of commands that is not (yet) in
 the test plan.
 
-The script compiles `src/main/java/*.java` with `javac` into a temporary folder,
+The script compiles every `.java` file under `src/main/java` with `javac` into a temporary folder,
 so it needs Java 25 on the `PATH`; it does not touch `out/` or any build folder.
 
 ## Rules to follow when using this skill
