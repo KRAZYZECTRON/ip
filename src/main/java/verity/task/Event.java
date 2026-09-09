@@ -1,3 +1,5 @@
+package verity.task;
+
 /**
  * A task that runs from one date/time to another, for example
  * "project meeting (from: Mon 2pm to: 4pm)".

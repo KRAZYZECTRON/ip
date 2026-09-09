@@ -46,7 +46,9 @@ trap 'rm -rf "$WORK"' EXIT
 # Build
 # ---------------------------------------------------------------------------
 echo "Compiling src/main/java ..."
-if ! javac -d "$WORK/classes" src/main/java/*.java; then
+# The sources sit in package folders under the source root, so they are
+# gathered recursively rather than by a glob of one directory.
+if ! javac -d "$WORK/classes" $(find src/main/java -name '*.java'); then
     echo ""
     echo "TEST SESSION TERMINATED: compilation failed." >&2
     exit 1
@@ -57,7 +59,7 @@ echo ""
 # Runs the program with the given input file and writes the console output
 # (with Windows carriage returns stripped) to the given output file.
 run_program() {
-    java -cp "$WORK/classes" Verity < "$1" 2>&1 | tr -d '\r' > "$2"
+    java -cp "$WORK/classes" verity.Verity < "$1" 2>&1 | tr -d '\r' > "$2"
 }
 
 # Prints the input and the actual output of one test case, so the reader can

@@ -8,7 +8,7 @@ program, and compares the console output character for character.
 
 For each test case the runner:
 
-1. compiles `src/main/java/*.java` into a temporary folder,
+1. compiles every `.java` file under `src/main/java` into a temporary folder,
 2. starts the program and types the lines of the **Input** block on standard
    input, and
 3. compares the whole console output with the **Expected output** block.

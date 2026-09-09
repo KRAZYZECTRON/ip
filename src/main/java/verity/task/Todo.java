@@ -1,3 +1,5 @@
+package verity.task;
+
 /**
  * A task with no date/time attached to it, for example "borrow book".
  */

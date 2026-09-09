@@ -1,3 +1,5 @@
+package verity.task;
+
 /**
  * A task in the task list: a description plus whether it has been done.
  *

@@ -1,3 +1,5 @@
+package verity.task;
+
 /**
  * A task that must be done before a given date/time, for example
  * "return book (by: Sunday)".
