@@ -36,6 +36,10 @@ public class Verity {
     private static final String KEYWORD_FROM = " /from ";
     private static final String KEYWORD_TO = " /to ";
 
+    /** Reminder of the commands on offer, added to messages that reject input. */
+    private static final String COMMAND_HINT =
+            "Try: todo, deadline, event, list, mark, unmark, bye.";
+
     /**
      * Starts Verity and reads commands from standard input until "bye" is entered.
      *
@@ -51,10 +55,28 @@ public class Verity {
         while (isRunning) {
             String input = scanner.nextLine();
             System.out.println(LINE);
-            isRunning = executeCommand(input, tasks);
+            try {
+                // Spaces around the command are the user's slip, not a command
+                // of their own, so they are dropped before anything is read.
+                isRunning = executeCommand(input.trim(), tasks);
+            } catch (VerityException e) {
+                printError(e);
+            }
             System.out.println(LINE);
         }
         scanner.close();
+    }
+
+    /**
+     * Prints the explanation carried by a rejected command, laid out like every
+     * other reply: one line at a time, each indented by a single space.
+     *
+     * @param error Exception describing what was wrong with the input.
+     */
+    private static void printError(VerityException error) {
+        for (String line : error.getMessage().split("\n")) {
+            System.out.println(" " + line);
+        }
     }
 
     /**
@@ -78,8 +100,14 @@ public class Verity {
      * @param tasks List of tasks the command works on.
      * @return True if Verity should keep reading commands, false if the user
      *         asked to exit.
+     * @throws VerityException If the input is not a command that can be carried
+     *                         out.
      */
-    private static boolean executeCommand(String input, TaskList tasks) {
+    private static boolean executeCommand(String input, TaskList tasks) throws VerityException {
+        if (input.isEmpty()) {
+            throw new VerityException("You pressed enter without typing a command.\n" + COMMAND_HINT);
+        }
+
         if (input.equals(COMMAND_BYE)) {
             System.out.println(" Bye. Hope to see you again soon!");
             return false;
@@ -98,7 +126,7 @@ public class Verity {
         } else if (hasCommand(input, COMMAND_EVENT)) {
             addEvent(getArguments(input, COMMAND_EVENT), tasks);
         } else {
-            printUnknownCommand();
+            throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
         }
         return true;
     }
@@ -224,13 +252,5 @@ public class Verity {
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);
         System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
-    }
-
-    /**
-     * Tells the user that their input was not one of the known commands.
-     */
-    private static void printUnknownCommand() {
-        System.out.println(" Sorry, I don't know what that means.");
-        System.out.println(" Try: todo, deadline, event, list, mark, unmark, bye.");
     }
 }

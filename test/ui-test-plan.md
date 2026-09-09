@@ -352,3 +352,69 @@ ____________________________________________________________
 ____________________________________________________________
 {{FAREWELL}}
 ```
+
+### TC-11 Reject a blank line
+
+**Aim:** Verify that pressing enter without typing anything is reported as a mistake with its own message, rather than being treated as an unknown command, and that it leaves the task list untouched.
+
+**Input:**
+
+```text
+
+todo read book
+
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ You pressed enter without typing a command.
+ Try: todo, deadline, event, list, mark, unmark, bye.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ You pressed enter without typing a command.
+ Try: todo, deadline, event, list, mark, unmark, bye.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-12 Ignore spaces around a command
+
+**Aim:** Verify that leading and trailing spaces around a command line are ignored, so a stray space does not turn a valid command into an unknown one.
+
+**Input:**
+
+```text
+   todo read book   
+  list  
+   bye   
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
