@@ -1,12 +1,26 @@
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 /**
- * Entry point for the YY chatbot: a command-line task list that supports
+ * Entry point for the Verity chatbot: a command-line task list that supports
  * adding to-dos, deadlines and events, listing them, and marking them
  * done or not done.
  */
-public class YY {
+public class Verity {
     private static final String LINE = "____________________________________________________________";
+
+    /** Block-letter banner spelling out the chatbot's name. */
+    private static final String BANNER = """
+            ██╗   ██╗███████╗██████╗ ██╗████████╗██╗   ██╗
+            ██║   ██║██╔════╝██╔══██╗██║╚══██╔══╝╚██╗ ██╔╝
+            ██║   ██║█████╗  ██████╔╝██║   ██║    ╚████╔╝
+            ╚██╗ ██╔╝██╔══╝  ██╔══██╗██║   ██║     ╚██╔╝
+             ╚████╔╝ ███████╗██║  ██║██║   ██║      ██║
+              ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝      ╚═╝
+            """;
 
     // The word the user types to choose a command.
     private static final String COMMAND_BYE = "bye";
@@ -23,11 +37,12 @@ public class YY {
     private static final String KEYWORD_TO = " /to ";
 
     /**
-     * Starts YY and reads commands from standard input until "bye" is entered.
+     * Starts Verity and reads commands from standard input until "bye" is entered.
      *
      * @param args Not used.
      */
     public static void main(String[] args) {
+        useUtf8Output();
         printGreeting();
 
         TaskList tasks = new TaskList();
@@ -43,12 +58,26 @@ public class YY {
     }
 
     /**
+     * Makes {@code System.out} write its text as UTF-8.
+     *
+     * <p>The banner is drawn with box-drawing characters, which are not part of
+     * the character set a Windows console uses by default; without this, the
+     * console prints each of them as a question mark. Replacing the standard
+     * output stream with one that is told to use UTF-8 keeps the banner
+     * readable whichever console the program is started from.
+     */
+    private static void useUtf8Output() {
+        FileOutputStream standardOutput = new FileOutputStream(FileDescriptor.out);
+        System.setOut(new PrintStream(standardOutput, true, StandardCharsets.UTF_8));
+    }
+
+    /**
      * Carries out one command and prints its reply.
      *
      * @param input Whole line the user typed.
      * @param tasks List of tasks the command works on.
-     * @return True if YY should keep reading commands, false if the user asked
-     *         to exit.
+     * @return True if Verity should keep reading commands, false if the user
+     *         asked to exit.
      */
     private static boolean executeCommand(String input, TaskList tasks) {
         if (input.equals(COMMAND_BYE)) {
@@ -95,19 +124,11 @@ public class YY {
     }
 
     /**
-     * Prints the banner and welcome message shown when YY starts.
+     * Prints the banner and welcome message shown when Verity starts.
      */
     private static void printGreeting() {
-        String banner = "\\ \\      / /  \\ \\      / /\n"
-                + " \\ \\    / /    \\ \\    / / \n"
-                + "  \\ \\  / /      \\ \\  / /  \n"
-                + "   \\ \\/ /        \\ \\/ /   \n"
-                + "    |  |          |  |    \n"
-                + "    |  |          |  |    \n"
-                + "    |  |          |  |    \n";
-
-        System.out.println(banner);
-        System.out.println("Hello! I'm YY");
+        System.out.println(BANNER);
+        System.out.println("Hello! I'm Verity");
         System.out.println("What can I do for you?");
         System.out.println(LINE);
     }

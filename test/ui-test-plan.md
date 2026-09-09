@@ -1,7 +1,7 @@
-# YY text-UI test plan
+# Verity text-UI test plan
 
 This file is the single source of truth for the text-UI (input/output) tests of
-the YY chatbot. The `test-ui` skill reads it, runs each test case against the
+the Verity chatbot. The `test-ui` skill reads it, runs each test case against the
 program, and compares the console output character for character.
 
 ## How the tests are run
@@ -38,15 +38,14 @@ the actual output, and the difference between them.
 #### GREETING
 
 ```text
-\ \      / /  \ \      / /
- \ \    / /    \ \    / / 
-  \ \  / /      \ \  / /  
-   \ \/ /        \ \/ /   
-    |  |          |  |    
-    |  |          |  |    
-    |  |          |  |    
+██╗   ██╗███████╗██████╗ ██╗████████╗██╗   ██╗
+██║   ██║██╔════╝██╔══██╗██║╚══██╔══╝╚██╗ ██╔╝
+██║   ██║█████╗  ██████╔╝██║   ██║    ╚████╔╝
+╚██╗ ██╔╝██╔══╝  ██╔══██╗██║   ██║     ╚██╔╝
+ ╚████╔╝ ███████╗██║  ██║██║   ██║      ██║
+  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝      ╚═╝
 
-Hello! I'm YY
+Hello! I'm Verity
 What can I do for you?
 ____________________________________________________________
 ```

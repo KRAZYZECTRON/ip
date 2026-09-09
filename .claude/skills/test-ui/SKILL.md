@@ -1,9 +1,9 @@
 ---
 name: test-ui
-description: Run the text-UI (console input/output) tests for the YY chatbot. Use after every change to the Java code in this project, and whenever asked to test, verify, or check the program's console behaviour, or to add a new UI test case.
+description: Run the text-UI (console input/output) tests for the Verity chatbot. Use after every change to the Java code in this project, and whenever asked to test, verify, or check the program's console behaviour, or to add a new UI test case.
 ---
 
-# Text-UI testing for YY
+# Text-UI testing for Verity
 
 This project is tested by feeding lists of commands to the program on standard
 input and comparing the resulting console output, character for character,

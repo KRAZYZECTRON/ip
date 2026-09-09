@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Runs the text-UI test cases for the YY chatbot.
+# Runs the text-UI test cases for the Verity chatbot.
 #
 # Each test case feeds a list of commands to the program on standard input and
 # compares the whole console output against the expected output. Test cases are
@@ -57,7 +57,7 @@ echo ""
 # Runs the program with the given input file and writes the console output
 # (with Windows carriage returns stripped) to the given output file.
 run_program() {
-    java -cp "$WORK/classes" YY < "$1" 2>&1 | tr -d '\r' > "$2"
+    java -cp "$WORK/classes" Verity < "$1" 2>&1 | tr -d '\r' > "$2"
 }
 
 # Prints the input and the actual output of one test case, so the reader can
