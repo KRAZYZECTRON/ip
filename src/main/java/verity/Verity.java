@@ -14,8 +14,8 @@ import verity.task.Todo;
 
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports
- * adding to-dos, deadlines and events, listing them, and marking them
- * done or not done.
+ * adding to-dos, deadlines and events, listing them, marking them done or not
+ * done, and deleting them.
  */
 public class Verity {
     private static final String LINE = "____________________________________________________________";
@@ -38,6 +38,7 @@ public class Verity {
     private static final String COMMAND_TODO = "todo";
     private static final String COMMAND_DEADLINE = "deadline";
     private static final String COMMAND_EVENT = "event";
+    private static final String COMMAND_DELETE = "delete";
 
     // The keyword that separates one argument of a command from the next. The
     // surrounding spaces are deliberately not part of the keyword: a command
@@ -49,7 +50,7 @@ public class Verity {
 
     /** Reminder of the commands on offer, added to messages that reject input. */
     private static final String COMMAND_HINT =
-            "Try: todo, deadline, event, list, mark, unmark, bye.";
+            "Try: todo, deadline, event, list, mark, unmark, delete, bye.";
 
     // A correct example of each command that takes arguments, shown alongside
     // the complaint when the user's attempt at that command could not be read.
@@ -152,6 +153,8 @@ public class Verity {
             addDeadline(arguments, tasks);
         } else if (commandWord.equals(COMMAND_EVENT)) {
             addEvent(arguments, tasks);
+        } else if (commandWord.equals(COMMAND_DELETE)) {
+            deleteTask(arguments, tasks);
         } else {
             throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
         }
@@ -174,7 +177,7 @@ public class Verity {
     }
 
     /**
-     * Reads the task number a "mark" or "unmark" command was given.
+     * Reads the task number a "mark", "unmark" or "delete" command was given.
      *
      * @param arguments Text the user typed after the command word.
      * @param commandWord Command the number belongs to, named in the message
@@ -197,23 +200,24 @@ public class Verity {
     }
 
     /**
-     * Returns the task that a "mark" or "unmark" command names.
+     * Returns the number of an existing task that a "mark", "unmark" or
+     * "delete" command names.
      *
      * @param arguments Text the user typed after the command word.
      * @param commandWord Command the number belongs to, named in the message
      *                    shown if the number cannot be read.
-     * @param tasks List to look the task up in.
-     * @return The task at the number the user typed.
+     * @param tasks List the number must name a task in.
+     * @return The task number the user typed, known to name a task in the list.
      * @throws VerityException If the number is missing, is not a number, or
      *                         does not name a task in the list.
      */
-    private static Task findTask(String arguments, String commandWord, TaskList tasks)
+    private static int findTaskNumber(String arguments, String commandWord, TaskList tasks)
             throws VerityException {
         int taskNumber = readTaskNumber(arguments, commandWord);
         if (!tasks.contains(taskNumber)) {
             throw new VerityException(describeMissingTask(taskNumber, tasks));
         }
-        return tasks.get(taskNumber);
+        return taskNumber;
     }
 
     /**
@@ -266,7 +270,7 @@ public class Verity {
      *                         does not name a task in the list.
      */
     private static void markTask(String arguments, TaskList tasks) throws VerityException {
-        Task task = findTask(arguments, COMMAND_MARK, tasks);
+        Task task = tasks.get(findTaskNumber(arguments, COMMAND_MARK, tasks));
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
         System.out.println("   " + task);
@@ -281,10 +285,26 @@ public class Verity {
      *                         does not name a task in the list.
      */
     private static void unmarkTask(String arguments, TaskList tasks) throws VerityException {
-        Task task = findTask(arguments, COMMAND_UNMARK, tasks);
+        Task task = tasks.get(findTaskNumber(arguments, COMMAND_UNMARK, tasks));
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
         System.out.println("   " + task);
+    }
+
+    /**
+     * Deletes the task named by a "delete &lt;task number&gt;" command. The
+     * tasks after it are renumbered to close the gap.
+     *
+     * @param arguments Task number the user typed.
+     * @param tasks List holding the task to delete.
+     * @throws VerityException If the task number is missing, unreadable, or
+     *                         does not name a task in the list.
+     */
+    private static void deleteTask(String arguments, TaskList tasks) throws VerityException {
+        Task task = tasks.remove(findTaskNumber(arguments, COMMAND_DELETE, tasks));
+        System.out.println(" Noted. I've removed this task:");
+        System.out.println("   " + task);
+        System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
     }
 
     /**
@@ -391,14 +411,8 @@ public class Verity {
      *
      * @param task Task to add.
      * @param tasks List to add the task to.
-     * @throws VerityException If the list is already full.
      */
-    private static void addTask(Task task, TaskList tasks) throws VerityException {
-        if (tasks.isFull()) {
-            throw new VerityException("Your list is full at " + tasks.size()
-                    + " tasks, so I can't add another one.\n"
-                    + "There is no way to remove a task yet, so that is as many as I can hold.");
-        }
+    private static void addTask(Task task, TaskList tasks) {
         tasks.add(task);
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);

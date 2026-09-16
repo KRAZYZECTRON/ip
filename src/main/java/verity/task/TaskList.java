@@ -1,18 +1,19 @@
 package verity.task;
 
+import java.util.ArrayList;
+
 /**
  * The list of tasks the user is keeping track of.
  *
  * <p>Hides how the tasks are stored, so the rest of the program can work in
- * terms of "add a task" and "give me task 3" instead of array slots and a
- * counter. Task numbers used here are the ones the user sees, starting at 1.
+ * terms of "add a task" and "give me task 3" instead of list indexes that start
+ * at 0. Task numbers used here are the ones the user sees, starting at 1.
+ *
+ * <p>The tasks are kept in an {@link ArrayList}, which grows by itself as tasks
+ * are added, so there is no fixed limit on how many the list can hold.
  */
 public class TaskList {
-    // Requirement caps storage at 100 tasks, so a fixed-size array is enough.
-    private static final int MAX_TASKS = 100;
-
-    private final Task[] tasks = new Task[MAX_TASKS];
-    private int taskCount = 0;
+    private final ArrayList<Task> tasks = new ArrayList<>();
 
     /**
      * Adds a task to the end of the list.
@@ -20,8 +21,7 @@ public class TaskList {
      * @param task Task to add.
      */
     public void add(Task task) {
-        tasks[taskCount] = task;
-        taskCount++;
+        tasks.add(task);
     }
 
     /**
@@ -31,7 +31,19 @@ public class TaskList {
      *                   counting from 1.
      */
     public Task get(int taskNumber) {
-        return tasks[taskNumber - 1];
+        return tasks.get(taskNumber - 1);
+    }
+
+    /**
+     * Removes the task at the given position and returns it. The tasks after
+     * it move up by one, so their numbers each drop by one.
+     *
+     * @param taskNumber Position of the task as shown by the "list" command,
+     *                   counting from 1.
+     * @return The task that was removed.
+     */
+    public Task remove(int taskNumber) {
+        return tasks.remove(taskNumber - 1);
     }
 
     /**
@@ -41,20 +53,13 @@ public class TaskList {
      *                   counting from 1.
      */
     public boolean contains(int taskNumber) {
-        return taskNumber >= 1 && taskNumber <= taskCount;
-    }
-
-    /**
-     * Returns true if the list has no room for another task.
-     */
-    public boolean isFull() {
-        return taskCount == MAX_TASKS;
+        return taskNumber >= 1 && taskNumber <= tasks.size();
     }
 
     /**
      * Returns how many tasks the list holds.
      */
     public int size() {
-        return taskCount;
+        return tasks.size();
     }
 }

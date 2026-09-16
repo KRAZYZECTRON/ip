@@ -345,7 +345,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  Sorry, I don't know what that means.
- Try: todo, deadline, event, list, mark, unmark, bye.
+ Try: todo, deadline, event, list, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
@@ -373,7 +373,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  You pressed enter without typing a command.
- Try: todo, deadline, event, list, mark, unmark, bye.
+ Try: todo, deadline, event, list, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
@@ -382,7 +382,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  You pressed enter without typing a command.
- Try: todo, deadline, event, list, mark, unmark, bye.
+ Try: todo, deadline, event, list, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
@@ -730,9 +730,238 @@ ____________________________________________________________
 {{FAREWELL}}
 ```
 
-### TC-20 Refuse to add past the 100-task limit
+### TC-20 Delete a task from the middle of the list
 
-**Aim:** Verify that the 101st task is refused with an explanation instead of overflowing the fixed-size array the task list is built on. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
+**Aim:** Verify that `delete <task number>` removes that task, shows it, reports the new task count, and renumbers the tasks after it so that a later command reaches the right task by its new number.
+
+**Input:**
+
+```text
+todo read book
+deadline return book /by June 6th
+event project meeting /from Aug 6th 2pm /to 4pm
+todo join sports club
+todo borrow book
+mark 1
+mark 2
+mark 4
+list
+delete 3
+list
+mark 4
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: June 6th)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ Now you have 3 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] join sports club
+ Now you have 4 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 5 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] read book
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [D][X] return book (by: June 6th)
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] join sports club
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[D][X] return book (by: June 6th)
+ 3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 4.[T][X] join sports club
+ 5.[T][ ] borrow book
+____________________________________________________________
+____________________________________________________________
+ Noted. I've removed this task:
+   [E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ Now you have 4 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[D][X] return book (by: June 6th)
+ 3.[T][X] join sports club
+ 4.[T][ ] borrow book
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] borrow book
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[D][X] return book (by: June 6th)
+ 3.[T][X] join sports club
+ 4.[T][X] borrow book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-21 Delete the first and last tasks until the list is empty
+
+**Aim:** Verify that deleting at both ends of the list works, that extra spaces around the task number are ignored, that the list can be emptied completely, and that tasks can be added again afterwards starting from number 1.
+
+**Input:**
+
+```text
+todo read book
+todo return book
+todo borrow book
+delete 1
+delete 2
+list
+  delete   1
+list
+todo join sports club
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] return book
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 3 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Noted. I've removed this task:
+   [T][ ] read book
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Noted. I've removed this task:
+   [T][ ] borrow book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] return book
+____________________________________________________________
+____________________________________________________________
+ Noted. I've removed this task:
+   [T][ ] return book
+ Now you have 0 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] join sports club
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] join sports club
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-22 Reject a delete that names no task
+
+**Aim:** Verify that `delete` on an empty list, without a number, with something that is not a number, with more than one number, or with a number outside the list is refused with the same kind of explanation as `mark`, and that no task is removed.
+
+**Input:**
+
+```text
+delete 1
+todo read book
+delete
+delete abc
+delete 1 2
+delete 0
+delete 2
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ There is no task 1, because your list is empty.
+ Try: todo borrow book
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Tell me which task to delete, by its number.
+ Try: delete 1
+____________________________________________________________
+____________________________________________________________
+ "abc" is not a task number.
+ Try: delete 1
+____________________________________________________________
+____________________________________________________________
+ "1 2" is not a task number.
+ Try: delete 1
+____________________________________________________________
+____________________________________________________________
+ There is no task 0. You have 1 task, numbered 1.
+ Try: list
+____________________________________________________________
+____________________________________________________________
+ There is no task 2. You have 1 task, numbered 1.
+ Try: list
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-23 Keep adding past 100 tasks
+
+**Aim:** Verify that the task list has no fixed size: a 101st task is accepted like any other, where the earlier array-based list refused it. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
 
 **Input:**
 
@@ -1346,8 +1575,9 @@ ____________________________________________________________
  Now you have 100 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
- Your list is full at 100 tasks, so I can't add another one.
- There is no way to remove a task yet, so that is as many as I can hold.
+ Got it. I've added this task:
+   [T][ ] task 101
+ Now you have 101 tasks in the list.
 ____________________________________________________________
 {{FAREWELL}}
 ```
