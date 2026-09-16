@@ -9,9 +9,17 @@ program, and compares the console output character for character.
 For each test case the runner:
 
 1. compiles every `.java` file under `src/main/java` into a temporary folder,
-2. starts the program and types the lines of the **Input** block on standard
-   input, and
-3. compares the whole console output with the **Expected output** block.
+2. creates an empty working directory for the test case and, if the test case
+   has a **Saved data before** block, writes it to `data/verity.txt` there,
+3. starts the program in that directory and types the lines of the **Input**
+   block on standard input,
+4. compares the whole console output with the **Expected output** block, and
+5. if the test case has a **Saved data after** block, compares
+   `data/verity.txt` with it.
+
+Because each test case gets its own working directory, no test case can see
+the tasks saved by another, and the tests never touch the `data` folder of the
+project itself.
 
 Run everything, or a single case, from the project root:
 
@@ -959,7 +967,387 @@ ____________________________________________________________
 {{FAREWELL}}
 ```
 
-### TC-23 Keep adding past 100 tasks
+### TC-23 Save every kind of task to the data file
+
+**Aim:** Verify that, on a first run with no `data` folder, adding a to-do, a deadline and an event and marking one of them creates `data/verity.txt` holding one line per task, with the type, the done flag, the description and the date/time details separated by ` | `.
+
+**Input:**
+
+```text
+todo read book
+deadline return book /by June 6th
+event project meeting /from Aug 6th 2pm /to 4pm
+mark 2
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: June 6th)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ Now you have 3 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [D][X] return book (by: June 6th)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+D | 1 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+```
+
+### TC-24 Save the change made by unmark
+
+**Aim:** Verify that unmarking a task is saved too, so the data file records the task as not done after it was first saved as done.
+
+**Input:**
+
+```text
+todo read book
+mark 1
+unmark 1
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] read book
+____________________________________________________________
+____________________________________________________________
+ OK, I've marked this task as not done yet:
+   [T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-25 Refuse a task containing the field separator
+
+**Aim:** Verify that a to-do, deadline or event whose text contains `|` is refused, because the character separates the fields of a saved task and would make the saved line unreadable, and that a refused task is neither added nor saved.
+
+**Input:**
+
+```text
+todo read | write
+deadline return book /by June|6th
+event meeting /from 2pm /to 4pm|5pm
+todo read book
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: todo borrow book
+____________________________________________________________
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-26 Load saved tasks at start-up and keep saving changes
+
+**Aim:** Verify that tasks in an existing data file are loaded when the program starts, with their types, done states and date/time details intact, and that changes made afterwards are saved on top of them.
+
+**Input:**
+
+```text
+list
+unmark 1
+todo borrow book
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[D][ ] return book (by: June 6th)
+ 3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 4.[T][X] join sports club
+____________________________________________________________
+____________________________________________________________
+ OK, I've marked this task as not done yet:
+   [T][ ] read book
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 5 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+ 2.[D][ ] return book (by: June 6th)
+ 3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 4.[T][X] join sports club
+ 5.[T][ ] borrow book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+D | 0 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+T | 1 | join sports club
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+D | 0 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+T | 1 | join sports club
+T | 0 | borrow book
+```
+
+### TC-27 Start from an empty data file
+
+**Aim:** Verify that a data file that exists but holds nothing loads as an empty list without any warning, and is filled in once a task is added.
+
+**Input:**
+
+```text
+list
+todo read book
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Here are the tasks in your list:
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-28 Skip unreadable lines in a corrupted data file
+
+**Aim:** Verify that lines of the data file that are not valid tasks — an unknown type, too few or too many fields for the type, a done flag other than 1 or 0, an empty field, or plain text — are skipped and listed by line number at start-up, that blank lines are ignored silently, that the valid lines around them still load, and that the file is not rewritten while the list does not change.
+
+**Input:**
+
+```text
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+ Some lines of your saved tasks are not in a form I can read, so I skipped them:
+   line 2: X | 0 | unknown type
+   line 3: D | 0 | return book
+   line 4: T | yes | join sports club
+   line 7: T | 0 |
+   line 8: D | 0 | return book | June 6th | extra
+   line 9: just some text
+ They will be left out the next time your list is saved.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 3.[D][X] return book (by: June 6th)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+X | 0 | unknown type
+D | 0 | return book
+T | yes | join sports club
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+
+T | 0 |
+D | 0 | return book | June 6th | extra
+just some text
+D | 1 | return book | June 6th
+```
+
+**Saved data after:**
+
+```text
+T | 1 | read book
+X | 0 | unknown type
+D | 0 | return book
+T | yes | join sports club
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+
+T | 0 |
+D | 0 | return book | June 6th | extra
+just some text
+D | 1 | return book | June 6th
+```
+
+### TC-29 Drop unreadable lines once the list changes
+
+**Aim:** Verify that after a data file with an unreadable line is loaded, the next change to the list saves only the tasks that were read, as the start-up warning promised.
+
+**Input:**
+
+```text
+todo borrow book
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+ Some lines of your saved tasks are not in a form I can read, so I skipped them:
+   line 2: not a task
+ They will be left out the next time your list is saved.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 2 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+not a task
+```
+
+**Saved data after:**
+
+```text
+T | 1 | read book
+T | 0 | borrow book
+```
+
+### TC-30 Save the change made by delete
+
+**Aim:** Verify that deleting a task is saved, so the data file no longer holds the deleted task and keeps the others in their new order.
+
+**Input:**
+
+```text
+delete 2
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Noted. I've removed this task:
+   [D][ ] return book (by: June 6th)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+D | 0 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+```
+
+**Saved data after:**
+
+```text
+T | 1 | read book
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+```
+
+### TC-31 Keep adding past 100 tasks
 
 **Aim:** Verify that the task list has no fixed size: a 101st task is accepted like any other, where the earlier array-based list refused it. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
 

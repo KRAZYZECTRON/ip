@@ -37,6 +37,10 @@ the test plan.
 The script compiles every `.java` file under `src/main/java` with `javac` into a temporary folder,
 so it needs Java 25 on the `PATH`; it does not touch `out/` or any build folder.
 
+Each test case runs in its own empty working directory under that temporary
+folder, so the tasks the program saves to `data/verity.txt` never leak from one
+test case into another, or into the project's own `data` folder.
+
 ## Rules to follow when using this skill
 
 1. **Run the full suite after every change to the Java code.** A change that is
@@ -92,3 +96,15 @@ Notes:
   line of their own.
 - Leading spaces in the expected output matter: the program indents its replies
   by one space and indents a task by three.
+
+## Checking the saved data file
+
+A test case may also have either or both of these blocks, placed after its
+expected output and written in the same fenced form:
+
+- `**Saved data before:**` — written to `data/verity.txt` in the working
+  directory before the program starts, to test loading. Without it, the program
+  starts with no `data` folder at all, as on a first run.
+- `**Saved data after:**` — compared with `data/verity.txt` once the program
+  has exited, to test saving. The test case fails if the file is missing or
+  differs. Without it, the file is not checked.

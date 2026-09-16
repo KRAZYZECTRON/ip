@@ -56,10 +56,20 @@ fi
 echo "Compilation OK (java $(java -version 2>&1 | head -1 | sed 's/.*version //; s/"//g'))"
 echo ""
 
+# The file the program saves its tasks to, relative to its working directory.
+DATA_FILE="data/verity.txt"
+
 # Runs the program with the given input file and writes the console output
 # (with Windows carriage returns stripped) to the given output file.
+#
+# The program runs inside the given working directory, which the caller creates
+# empty for each test case. The program reads and writes its data file relative
+# to its working directory, so this keeps every test case from seeing the data
+# saved by another one, and keeps the tests away from the user's own data file.
 run_program() {
-    java -cp "$WORK/classes" verity.Verity < "$1" 2>&1 | tr -d '\r' > "$2"
+    local input_file="$1" output_file="$2" run_dir="$3"
+    (cd "$run_dir" && java -cp "$WORK/classes" verity.Verity) < "$input_file" 2>&1 \
+            | tr -d '\r' > "$output_file"
 }
 
 # Prints the input and the actual output of one test case, so the reader can
@@ -92,6 +102,28 @@ fail() {
     exit 1
 }
 
+# Reports a data file that does not hold what the test case expects, and stops
+# the whole test session.
+fail_data_file() {
+    local label="$1" expected_file="$2" actual_file="$3"
+    echo ""
+    echo "FAILED: $label (saved data file $DATA_FILE)"
+    echo ""
+    echo "===== expected $DATA_FILE ====="
+    cat "$expected_file"
+    echo "===== actual $DATA_FILE ====="
+    if [ -f "$actual_file" ]; then
+        cat "$actual_file"
+        echo "===== difference (- expected, + actual) ====="
+        diff -u "$expected_file" "$actual_file" | tail -n +3
+    else
+        echo "(the program did not create the file)"
+    fi
+    echo ""
+    echo "TEST SESSION TERMINATED at $label." >&2
+    exit 1
+}
+
 # ---------------------------------------------------------------------------
 # Ad-hoc mode: a single input/expected pair given on the command line
 # ---------------------------------------------------------------------------
@@ -101,7 +133,8 @@ if [ -n "$AD_HOC_INPUT" ] || [ -n "$AD_HOC_EXPECTED" ]; then
         exit 2
     fi
     tr -d '\r' < "$AD_HOC_EXPECTED" > "$WORK/adhoc.exp"
-    run_program "$AD_HOC_INPUT" "$WORK/adhoc.out"
+    mkdir -p "$WORK/adhoc-run"
+    run_program "$AD_HOC_INPUT" "$WORK/adhoc.out" "$WORK/adhoc-run"
     if ! diff -q "$WORK/adhoc.exp" "$WORK/adhoc.out" > /dev/null; then
         fail "ad-hoc test" "$WORK/adhoc.exp" "$WORK/adhoc.out" "$AD_HOC_INPUT"
     fi
@@ -128,6 +161,10 @@ mkdir -p "$WORK/cases"
 #   "**Aim:** ..."                            -> the aim of that test case
 #   "**Input:**"               + fenced block -> the commands to type
 #   "**Expected output:**"     + fenced block -> the console output expected
+#   "**Saved data before:**"   + fenced block -> optional; the data file to
+#                                                put in place before the run
+#   "**Saved data after:**"    + fenced block -> optional; the data file the
+#                                                program must leave behind
 awk -v dir="$WORK/cases" '
     {
         line = $0
@@ -145,6 +182,10 @@ awk -v dir="$WORK/cases" '
                 expected[n] = expected[n] line "\n"
             } else if (mode == "blk") {
                 blocks[blockName] = blocks[blockName] line "\n"
+            } else if (mode == "before") {
+                dataBefore[n] = dataBefore[n] line "\n"
+            } else if (mode == "after") {
+                dataAfter[n] = dataAfter[n] line "\n"
             }
             next
         }
@@ -176,6 +217,20 @@ awk -v dir="$WORK/cases" '
             awaiting = 1
             next
         }
+        # A data block may be empty, so whether it was given is recorded
+        # separately from its content.
+        if (line ~ /^\*\*Saved data before:\*\*/) {
+            mode = "before"
+            hasBefore[n] = 1
+            awaiting = 1
+            next
+        }
+        if (line ~ /^\*\*Saved data after:\*\*/) {
+            mode = "after"
+            hasAfter[n] = 1
+            awaiting = 1
+            next
+        }
         if (awaiting && line ~ /^```/) {
             capturing = 1
             awaiting = 0
@@ -198,6 +253,13 @@ awk -v dir="$WORK/cases" '
                 }
             }
             printf "%s", text > (dir "/" i ".exp")
+
+            if (hasBefore[i]) {
+                printf "%s", dataBefore[i] > (dir "/" i ".before")
+            }
+            if (hasAfter[i]) {
+                printf "%s", dataAfter[i] > (dir "/" i ".after")
+            }
 
             printf "%s\n", names[i] > (dir "/" i ".name")
             printf "%s\n", aims[i] > (dir "/" i ".aim")
@@ -228,14 +290,40 @@ while [ "$i" -le "$CASE_COUNT" ]; do
         continue
     fi
 
-    run_program "$WORK/cases/$i.in" "$WORK/cases/$i.out"
+    # Every test case starts in an empty working directory, holding only the
+    # data file the test case asks for, if any.
+    RUN_DIR="$WORK/run/$i"
+    mkdir -p "$RUN_DIR"
+    if [ -f "$WORK/cases/$i.before" ]; then
+        mkdir -p "$RUN_DIR/$(dirname "$DATA_FILE")"
+        cp "$WORK/cases/$i.before" "$RUN_DIR/$DATA_FILE"
+    fi
+
+    run_program "$WORK/cases/$i.in" "$WORK/cases/$i.out" "$RUN_DIR"
     if ! diff -q "$WORK/cases/$i.exp" "$WORK/cases/$i.out" > /dev/null; then
         fail "$NAME" "$WORK/cases/$i.exp" "$WORK/cases/$i.out" "$WORK/cases/$i.in"
+    fi
+
+    # Line endings in the saved file follow the operating system, so carriage
+    # returns are stripped before comparing, as for the console output.
+    if [ -f "$WORK/cases/$i.after" ]; then
+        SAVED="$WORK/cases/$i.saved"
+        if [ -f "$RUN_DIR/$DATA_FILE" ]; then
+            tr -d '\r' < "$RUN_DIR/$DATA_FILE" > "$SAVED"
+        fi
+        if [ ! -f "$SAVED" ] || ! diff -q "$WORK/cases/$i.after" "$SAVED" > /dev/null; then
+            fail_data_file "$NAME" "$WORK/cases/$i.after" "$SAVED"
+        fi
     fi
 
     echo "PASSED: $NAME"
     echo "  Aim: $AIM"
     show_session "$WORK/cases/$i.in" "$WORK/cases/$i.out"
+    if [ -f "$WORK/cases/$i.after" ]; then
+        echo "--- saved data file $DATA_FILE ---"
+        cat "$WORK/cases/$i.saved"
+        echo "--- end of saved data file ---"
+    fi
     echo ""
     PASSED=$((PASSED + 1))
     i=$((i + 1))
