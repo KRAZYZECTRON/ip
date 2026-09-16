@@ -24,3 +24,15 @@ Prerequisites: JDK 25, update Intellij to the most recent version.
    ```
 
 **Warning:** Keep the `src\main\java` folder as the root folder for Java files (i.e., don't rename those folders or move Java files to another folder outside of this folder path), as this is the default location some tools (e.g., Gradle) expect to find Java files.
+
+## Building and running a JAR file
+
+The project uses Gradle, through the Gradle wrapper that comes with it, so Gradle need not be installed separately.
+
+1. From the project root, build the JAR file:
+   * Windows: `gradlew.bat shadowJar`
+   * macOS/Linux: `./gradlew shadowJar`
+1. The JAR file is created as `build/libs/verity.jar`. It holds everything the app needs, so it can be copied anywhere.
+1. Copy it into an empty folder, open a terminal in that folder, and run `java -jar "verity.jar"` (Java 25 is needed).
+
+Verity saves its tasks to `data/verity.txt` inside the folder it is started from, creating the `data` folder if needed.
