@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Scanner;
 
 import verity.storage.Storage;
@@ -18,7 +19,8 @@ import verity.task.Todo;
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports
  * adding to-dos, deadlines and events, listing them, and marking them
- * done or not done. The list is saved to disk whenever it changes.
+ * done or not done. The list is saved to disk whenever it changes, and loaded
+ * again when Verity starts.
  */
 public class Verity {
     private static final String LINE = "____________________________________________________________";
@@ -77,7 +79,7 @@ public class Verity {
         useUtf8Output();
         printGreeting();
 
-        TaskList tasks = new TaskList();
+        TaskList tasks = loadTasks();
         Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;
         while (isRunning) {
@@ -93,6 +95,40 @@ public class Verity {
             System.out.println(LINE);
         }
         scanner.close();
+    }
+
+    /**
+     * Loads the tasks saved by an earlier session, telling the user about
+     * anything in the data file that could not be read.
+     *
+     * <p>A data file that cannot be read never stops Verity from starting: the
+     * user gets whatever could be read, or an empty list, plus an explanation.
+     *
+     * @return The saved tasks, or an empty list if there are none or the data
+     *         file cannot be read.
+     */
+    private static TaskList loadTasks() {
+        TaskList tasks;
+        try {
+            tasks = STORAGE.load();
+        } catch (IOException e) {
+            System.out.println(" I couldn't read your saved tasks, so I'm starting with an empty list.");
+            System.out.println(" They will be replaced the next time your list changes.");
+            System.out.println(LINE);
+            return new TaskList();
+        }
+
+        List<String> skippedLines = STORAGE.getSkippedLines();
+        if (!skippedLines.isEmpty()) {
+            System.out.println(" Some lines of your saved tasks are not in a form I can read,"
+                    + " so I skipped them:");
+            for (String skippedLine : skippedLines) {
+                System.out.println("   " + skippedLine);
+            }
+            System.out.println(" They will be left out the next time your list is saved.");
+            System.out.println(LINE);
+        }
+        return tasks;
     }
 
     /**

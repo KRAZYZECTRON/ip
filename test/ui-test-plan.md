@@ -874,7 +874,213 @@ ____________________________________________________________
 T | 0 | read book
 ```
 
-### TC-23 Refuse to add past the 100-task limit
+### TC-23 Load saved tasks at start-up and keep saving changes
+
+**Aim:** Verify that tasks in an existing data file are loaded when the program starts, with their types, done states and date/time details intact, and that changes made afterwards are saved on top of them.
+
+**Input:**
+
+```text
+list
+unmark 1
+todo borrow book
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[D][ ] return book (by: June 6th)
+ 3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 4.[T][X] join sports club
+____________________________________________________________
+____________________________________________________________
+ OK, I've marked this task as not done yet:
+   [T][ ] read book
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 5 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+ 2.[D][ ] return book (by: June 6th)
+ 3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 4.[T][X] join sports club
+ 5.[T][ ] borrow book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+D | 0 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+T | 1 | join sports club
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+D | 0 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+T | 1 | join sports club
+T | 0 | borrow book
+```
+
+### TC-24 Start from an empty data file
+
+**Aim:** Verify that a data file that exists but holds nothing loads as an empty list without any warning, and is filled in once a task is added.
+
+**Input:**
+
+```text
+list
+todo read book
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Here are the tasks in your list:
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-25 Skip unreadable lines in a corrupted data file
+
+**Aim:** Verify that lines of the data file that are not valid tasks — an unknown type, too few or too many fields for the type, a done flag other than 1 or 0, an empty field, or plain text — are skipped and listed by line number at start-up, that blank lines are ignored silently, that the valid lines around them still load, and that the file is not rewritten while the list does not change.
+
+**Input:**
+
+```text
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+ Some lines of your saved tasks are not in a form I can read, so I skipped them:
+   line 2: X | 0 | unknown type
+   line 3: D | 0 | return book
+   line 4: T | yes | join sports club
+   line 7: T | 0 |
+   line 8: D | 0 | return book | June 6th | extra
+   line 9: just some text
+ They will be left out the next time your list is saved.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][X] read book
+ 2.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ 3.[D][X] return book (by: June 6th)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+X | 0 | unknown type
+D | 0 | return book
+T | yes | join sports club
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+
+T | 0 |
+D | 0 | return book | June 6th | extra
+just some text
+D | 1 | return book | June 6th
+```
+
+**Saved data after:**
+
+```text
+T | 1 | read book
+X | 0 | unknown type
+D | 0 | return book
+T | yes | join sports club
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+
+T | 0 |
+D | 0 | return book | June 6th | extra
+just some text
+D | 1 | return book | June 6th
+```
+
+### TC-26 Drop unreadable lines once the list changes
+
+**Aim:** Verify that after a data file with an unreadable line is loaded, the next change to the list saves only the tasks that were read, as the start-up warning promised.
+
+**Input:**
+
+```text
+todo borrow book
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+ Some lines of your saved tasks are not in a form I can read, so I skipped them:
+   line 2: not a task
+ They will be left out the next time your list is saved.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] borrow book
+ Now you have 2 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data before:**
+
+```text
+T | 1 | read book
+not a task
+```
+
+**Saved data after:**
+
+```text
+T | 1 | read book
+T | 0 | borrow book
+```
+
+### TC-27 Refuse to add past the 100-task limit
 
 **Aim:** Verify that the 101st task is refused with an explanation instead of overflowing the fixed-size array the task list is built on. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
 
