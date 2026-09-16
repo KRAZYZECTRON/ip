@@ -738,7 +738,143 @@ ____________________________________________________________
 {{FAREWELL}}
 ```
 
-### TC-20 Refuse to add past the 100-task limit
+### TC-20 Save every kind of task to the data file
+
+**Aim:** Verify that, on a first run with no `data` folder, adding a to-do, a deadline and an event and marking one of them creates `data/verity.txt` holding one line per task, with the type, the done flag, the description and the date/time details separated by ` | `.
+
+**Input:**
+
+```text
+todo read book
+deadline return book /by June 6th
+event project meeting /from Aug 6th 2pm /to 4pm
+mark 2
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: June 6th)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
+ Now you have 3 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [D][X] return book (by: June 6th)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+D | 1 | return book | June 6th
+E | 0 | project meeting | Aug 6th 2pm | 4pm
+```
+
+### TC-21 Save the change made by unmark
+
+**Aim:** Verify that unmarking a task is saved too, so the data file records the task as not done after it was first saved as done.
+
+**Input:**
+
+```text
+todo read book
+mark 1
+unmark 1
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] read book
+____________________________________________________________
+____________________________________________________________
+ OK, I've marked this task as not done yet:
+   [T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-22 Refuse a task containing the field separator
+
+**Aim:** Verify that a to-do, deadline or event whose text contains `|` is refused, because the character separates the fields of a saved task and would make the saved line unreadable, and that a refused task is neither added nor saved.
+
+**Input:**
+
+```text
+todo read | write
+deadline return book /by June|6th
+event meeting /from 2pm /to 4pm|5pm
+todo read book
+list
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: todo borrow book
+____________________________________________________________
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: deadline return book /by Sunday
+____________________________________________________________
+____________________________________________________________
+ Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
+ Try: event project meeting /from Mon 2pm /to 4pm
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Here are the tasks in your list:
+ 1.[T][ ] read book
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```
+
+### TC-23 Refuse to add past the 100-task limit
 
 **Aim:** Verify that the 101st task is refused with an explanation instead of overflowing the fixed-size array the task list is built on. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
 

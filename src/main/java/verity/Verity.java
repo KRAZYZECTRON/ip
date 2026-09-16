@@ -2,10 +2,13 @@ package verity;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Scanner;
 
+import verity.storage.Storage;
 import verity.task.Deadline;
 import verity.task.Event;
 import verity.task.Task;
@@ -15,10 +18,18 @@ import verity.task.Todo;
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports
  * adding to-dos, deadlines and events, listing them, and marking them
- * done or not done.
+ * done or not done. The list is saved to disk whenever it changes.
  */
 public class Verity {
     private static final String LINE = "____________________________________________________________";
+
+    /**
+     * Where the task list is saved. The path is relative, so it is found in the
+     * folder the program is started from on any computer, and it is built from
+     * its parts by {@code Path.of} rather than written as "data/verity.txt", so
+     * that the separator between them suits the operating system.
+     */
+    private static final Storage STORAGE = new Storage(Path.of("data", "verity.txt"));
 
     /** Block-letter banner spelling out the chatbot's name. */
     private static final String BANNER = """
@@ -263,13 +274,15 @@ public class Verity {
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to mark.
      * @throws VerityException If the task number is missing, unreadable, or
-     *                         does not name a task in the list.
+     *                         does not name a task in the list, or the
+     *                         change could not be saved.
      */
     private static void markTask(String arguments, TaskList tasks) throws VerityException {
         Task task = findTask(arguments, COMMAND_MARK, tasks);
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
         System.out.println("   " + task);
+        saveTasks(tasks);
     }
 
     /**
@@ -278,13 +291,15 @@ public class Verity {
      * @param arguments Task number the user typed.
      * @param tasks List holding the task to unmark.
      * @throws VerityException If the task number is missing, unreadable, or
-     *                         does not name a task in the list.
+     *                         does not name a task in the list, or the
+     *                         change could not be saved.
      */
     private static void unmarkTask(String arguments, TaskList tasks) throws VerityException {
         Task task = findTask(arguments, COMMAND_UNMARK, tasks);
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
         System.out.println("   " + task);
+        saveTasks(tasks);
     }
 
     /**
@@ -292,13 +307,16 @@ public class Verity {
      *
      * @param arguments Description the user typed.
      * @param tasks List to add the task to.
-     * @throws VerityException If no description was given.
+     * @throws VerityException If no description was given, the description
+     *                         contains the field separator, or the task could
+     *                         not be added or saved.
      */
     private static void addTodo(String arguments, TaskList tasks) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A todo needs a description saying what to do.\n"
                     + EXAMPLE_TODO);
         }
+        rejectFieldSeparator(arguments, EXAMPLE_TODO);
         addTask(new Todo(arguments), tasks);
     }
 
@@ -309,13 +327,15 @@ public class Verity {
      * @param arguments Description and due date/time the user typed.
      * @param tasks List to add the task to.
      * @throws VerityException If the description, the /by keyword or the due
-     *                         date is missing.
+     *                         date is missing, the arguments contain the field
+     *                         separator, or the task could not be added or saved.
      */
     private static void addDeadline(String arguments, TaskList tasks) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A deadline needs a description and a due date.\n"
                     + EXAMPLE_DEADLINE);
         }
+        rejectFieldSeparator(arguments, EXAMPLE_DEADLINE);
 
         int byIndex = arguments.indexOf(KEYWORD_BY);
         if (byIndex < 0) {
@@ -344,14 +364,16 @@ public class Verity {
      * @param arguments Description, start and end date/time the user typed.
      * @param tasks List to add the task to.
      * @throws VerityException If the description, either keyword, the start or
-     *                         the end is missing, or the two keywords are the
-     *                         wrong way round.
+     *                         the end is missing, the two keywords are the
+     *                         wrong way round, the arguments contain the field
+     *                         separator, or the task could not be added or saved.
      */
     private static void addEvent(String arguments, TaskList tasks) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("An event needs a description, a start and an end.\n"
                     + EXAMPLE_EVENT);
         }
+        rejectFieldSeparator(arguments, EXAMPLE_EVENT);
 
         int fromIndex = arguments.indexOf(KEYWORD_FROM);
         if (fromIndex < 0) {
@@ -391,7 +413,8 @@ public class Verity {
      *
      * @param task Task to add.
      * @param tasks List to add the task to.
-     * @throws VerityException If the list is already full.
+     * @throws VerityException If the list is already full, or the task was
+     *                         added but the list could not be saved.
      */
     private static void addTask(Task task, TaskList tasks) throws VerityException {
         if (tasks.isFull()) {
@@ -403,5 +426,42 @@ public class Verity {
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);
         System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
+        saveTasks(tasks);
+    }
+
+    /**
+     * Checks that the arguments of a command that adds a task do not contain
+     * the character the data file uses to separate fields. A description
+     * holding it would be split in the wrong places when the file is loaded.
+     *
+     * @param arguments Text the user typed after the command word.
+     * @param example Correct example of the command, shown if it is refused.
+     * @throws VerityException If the arguments contain the character.
+     */
+    private static void rejectFieldSeparator(String arguments, String example) throws VerityException {
+        if (arguments.contains(Storage.FORBIDDEN_CHARACTER)) {
+            throw new VerityException("Sorry, I can't store the " + Storage.FORBIDDEN_CHARACTER
+                    + " character, because I use it to separate the parts of a saved task.\n"
+                    + example);
+        }
+    }
+
+    /**
+     * Saves the whole task list to disk, called after every change to it.
+     *
+     * <p>The reply confirming the change is printed before this is called, so
+     * if saving fails the user sees both that the change was made and that it
+     * will not outlast the session.
+     *
+     * @param tasks Tasks to save.
+     * @throws VerityException If the list could not be written to disk.
+     */
+    private static void saveTasks(TaskList tasks) throws VerityException {
+        try {
+            STORAGE.save(tasks);
+        } catch (IOException e) {
+            throw new VerityException("I couldn't save your tasks to disk, so this change"
+                    + " will be lost when you exit.");
+        }
     }
 }

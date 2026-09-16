@@ -1,5 +1,7 @@
 package verity.task;
 
+import java.util.List;
+
 /**
  * A task that must be done before a given date/time, for example
  * "return book (by: Sunday)".
@@ -22,6 +24,13 @@ public class Deadline extends Task {
     @Override
     public String getTypeIcon() {
         return "D";
+    }
+
+    @Override
+    public List<String> getSaveFields() {
+        List<String> fields = super.getSaveFields();
+        fields.add(by);
+        return fields;
     }
 
     @Override

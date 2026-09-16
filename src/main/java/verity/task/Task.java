@@ -1,5 +1,8 @@
 package verity.task;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * A task in the task list: a description plus whether it has been done.
  *
@@ -45,6 +48,23 @@ public abstract class Task {
      */
     public void markAsNotDone() {
         isDone = false;
+    }
+
+    /**
+     * Returns the pieces of information needed to recreate this task when it
+     * is loaded from disk, in the order they are saved: the type icon, "1" if
+     * done or "0" if not, the description, and then any date/time details the
+     * task type adds.
+     *
+     * <p>Subclasses with extra details override this method, call it through
+     * {@code super}, and append their own fields to the list it returns.
+     */
+    public List<String> getSaveFields() {
+        List<String> fields = new ArrayList<>();
+        fields.add(getTypeIcon());
+        fields.add(isDone ? "1" : "0");
+        fields.add(description);
+        return fields;
     }
 
     @Override

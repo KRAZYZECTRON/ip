@@ -1,5 +1,7 @@
 package verity.task;
 
+import java.util.List;
+
 /**
  * A task that runs from one date/time to another, for example
  * "project meeting (from: Mon 2pm to: 4pm)".
@@ -26,6 +28,14 @@ public class Event extends Task {
     @Override
     public String getTypeIcon() {
         return "E";
+    }
+
+    @Override
+    public List<String> getSaveFields() {
+        List<String> fields = super.getSaveFields();
+        fields.add(from);
+        fields.add(to);
+        return fields;
     }
 
     @Override
