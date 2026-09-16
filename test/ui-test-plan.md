@@ -9,9 +9,17 @@ program, and compares the console output character for character.
 For each test case the runner:
 
 1. compiles every `.java` file under `src/main/java` into a temporary folder,
-2. starts the program and types the lines of the **Input** block on standard
-   input, and
-3. compares the whole console output with the **Expected output** block.
+2. creates an empty working directory for the test case and, if the test case
+   has a **Saved data before** block, writes it to `data/verity.txt` there,
+3. starts the program in that directory and types the lines of the **Input**
+   block on standard input,
+4. compares the whole console output with the **Expected output** block, and
+5. if the test case has a **Saved data after** block, compares
+   `data/verity.txt` with it.
+
+Because each test case gets its own working directory, no test case can see
+the tasks saved by another, and the tests never touch the `data` folder of the
+project itself.
 
 Run everything, or a single case, from the project root:
 
