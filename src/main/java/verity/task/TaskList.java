@@ -35,6 +35,18 @@ public class TaskList {
     }
 
     /**
+     * Removes the task at the given position and returns it. The tasks after
+     * it move up by one, so their numbers each drop by one.
+     *
+     * @param taskNumber Position of the task as shown by the "list" command,
+     *                   counting from 1.
+     * @return The task that was removed.
+     */
+    public Task remove(int taskNumber) {
+        return tasks.remove(taskNumber - 1);
+    }
+
+    /**
      * Returns true if the given task number names a task that is in the list.
      *
      * @param taskNumber Position of the task as shown by the "list" command,
