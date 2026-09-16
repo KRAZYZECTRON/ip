@@ -391,14 +391,8 @@ public class Verity {
      *
      * @param task Task to add.
      * @param tasks List to add the task to.
-     * @throws VerityException If the list is already full.
      */
-    private static void addTask(Task task, TaskList tasks) throws VerityException {
-        if (tasks.isFull()) {
-            throw new VerityException("Your list is full at " + tasks.size()
-                    + " tasks, so I can't add another one.\n"
-                    + "There is no way to remove a task yet, so that is as many as I can hold.");
-        }
+    private static void addTask(Task task, TaskList tasks) {
         tasks.add(task);
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);

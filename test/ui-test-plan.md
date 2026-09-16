@@ -730,9 +730,9 @@ ____________________________________________________________
 {{FAREWELL}}
 ```
 
-### TC-20 Refuse to add past the 100-task limit
+### TC-20 Keep adding past 100 tasks
 
-**Aim:** Verify that the 101st task is refused with an explanation instead of overflowing the fixed-size array the task list is built on. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
+**Aim:** Verify that the task list has no fixed size: a 101st task is accepted like any other, where the earlier array-based list refused it. The expected output is long because every accepted task is confirmed; it is kept last so it does not get in the way of reading the other cases.
 
 **Input:**
 
@@ -1346,8 +1346,9 @@ ____________________________________________________________
  Now you have 100 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
- Your list is full at 100 tasks, so I can't add another one.
- There is no way to remove a task yet, so that is as many as I can hold.
+ Got it. I've added this task:
+   [T][ ] task 101
+ Now you have 101 tasks in the list.
 ____________________________________________________________
 {{FAREWELL}}
 ```
