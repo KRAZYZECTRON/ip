@@ -2082,3 +2082,31 @@ ____________________________________________________________
 ____________________________________________________________
 {{FAREWELL}}
 ```
+
+### TC-34 Exit normally when the input ends without bye
+
+**Aim:** Verify that when the input ends before `bye` is typed, as when the user presses Ctrl+D (Ctrl+Z then Enter on Windows), Verity says goodbye and exits instead of crashing, and keeps the tasks saved before that.
+
+**Input:**
+
+```text
+todo read book
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+**Saved data after:**
+
+```text
+T | 0 | read book
+```

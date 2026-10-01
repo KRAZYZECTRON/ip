@@ -27,8 +27,9 @@ import verity.task.Todo;
  * always gives the same result.
  */
 public class Parser {
-    // The word the user types to choose a command.
-    private static final String COMMAND_BYE = "bye";
+    // The word the user types to choose a command. The exit command is public
+    // so that Ui can exit with it when the input ends.
+    public static final String COMMAND_BYE = "bye";
     private static final String COMMAND_LIST = "list";
     private static final String COMMAND_MARK = "mark";
     private static final String COMMAND_UNMARK = "unmark";

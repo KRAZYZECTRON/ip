@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
 
+import verity.parser.Parser;
 import verity.task.Task;
 import verity.task.TaskList;
 
@@ -64,8 +65,16 @@ public class Ui {
     /**
      * Returns the next line the user types, with surrounding spaces removed.
      * Spaces around a command are the user's slip, not part of the command.
+     *
+     * <p>If the input has ended, for example because the user pressed Ctrl+D
+     * (Ctrl+Z then Enter on Windows), there is no line left to read. The exit
+     * command is then returned, so that Verity says goodbye and stops normally
+     * instead of crashing.
      */
     public String readCommand() {
+        if (!in.hasNextLine()) {
+            return Parser.COMMAND_BYE;
+        }
         return in.nextLine().trim();
     }
 
