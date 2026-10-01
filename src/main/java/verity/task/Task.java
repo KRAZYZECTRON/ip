@@ -26,6 +26,10 @@ public abstract class Task {
         this.isDone = false;
     }
 
+    /**
+     * Returns the icon showing whether this task is done: "X" if it is, or a
+     * space if it is not, so that the list lines up either way.
+     */
     public String getStatusIcon() {
         return (isDone ? "X" : " "); // mark done task with X
     }
