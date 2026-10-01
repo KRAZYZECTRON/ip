@@ -1,13 +1,8 @@
 package verity;
 
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Scanner;
 
 import verity.storage.Storage;
 import verity.task.Deadline;
@@ -15,6 +10,7 @@ import verity.task.Event;
 import verity.task.Task;
 import verity.task.TaskList;
 import verity.task.Todo;
+import verity.ui.Ui;
 
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports
@@ -23,8 +19,6 @@ import verity.task.Todo;
  * loaded again when Verity starts.
  */
 public class Verity {
-    private static final String LINE = "____________________________________________________________";
-
     /**
      * Where the task list is saved. The path is relative, so it is found in the
      * folder the program is started from on any computer, and it is built from
@@ -32,16 +26,6 @@ public class Verity {
      * that the separator between them suits the operating system.
      */
     private static final Path DATA_FILE = Path.of("data", "verity.txt");
-
-    /** Block-letter banner spelling out the chatbot's name. */
-    private static final String BANNER = """
-            ██╗   ██╗███████╗██████╗ ██╗████████╗██╗   ██╗
-            ██║   ██║██╔════╝██╔══██╗██║╚══██╔══╝╚██╗ ██╔╝
-            ██║   ██║█████╗  ██████╔╝██║   ██║    ╚████╔╝
-            ╚██╗ ██╔╝██╔══╝  ██╔══██╗██║   ██║     ╚██╔╝
-             ╚████╔╝ ███████╗██║  ██║██║   ██║      ██║
-              ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝      ╚═╝
-            """;
 
     // The word the user types to choose a command.
     private static final String COMMAND_BYE = "bye";
@@ -71,6 +55,9 @@ public class Verity {
     private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
     private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
 
+    /** Reads the user's commands and shows Verity's replies. */
+    private final Ui ui;
+
     /** Reads and writes the task list on disk. */
     private final Storage storage;
 
@@ -83,6 +70,7 @@ public class Verity {
      * @param filePath File the tasks are loaded from and saved to.
      */
     public Verity(Path filePath) {
+        ui = new Ui();
         storage = new Storage(filePath);
     }
 
@@ -100,25 +88,19 @@ public class Verity {
      * from standard input until the user exits.
      */
     public void run() {
-        useUtf8Output();
-        printGreeting();
-
+        ui.showWelcome();
         tasks = loadTasks();
-        Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;
         while (isRunning) {
-            String input = scanner.nextLine();
-            System.out.println(LINE);
+            String input = ui.readCommand();
+            ui.showLine();
             try {
-                // Spaces around the command are the user's slip, not a command
-                // of their own, so they are dropped before anything is read.
-                isRunning = executeCommand(input.trim());
+                isRunning = executeCommand(input);
             } catch (VerityException e) {
-                printError(e);
+                ui.showError(e.getMessage());
             }
-            System.out.println(LINE);
+            ui.showLine();
         }
-        scanner.close();
     }
 
     /**
@@ -136,49 +118,15 @@ public class Verity {
         try {
             loadedTasks = storage.load();
         } catch (IOException e) {
-            System.out.println(" I couldn't read your saved tasks, so I'm starting with an empty list.");
-            System.out.println(" They will be replaced the next time your list changes.");
-            System.out.println(LINE);
+            ui.showLoadingError();
             return new TaskList();
         }
 
         List<String> skippedLines = storage.getSkippedLines();
         if (!skippedLines.isEmpty()) {
-            System.out.println(" Some lines of your saved tasks are not in a form I can read,"
-                    + " so I skipped them:");
-            for (String skippedLine : skippedLines) {
-                System.out.println("   " + skippedLine);
-            }
-            System.out.println(" They will be left out the next time your list is saved.");
-            System.out.println(LINE);
+            ui.showSkippedLines(skippedLines);
         }
         return loadedTasks;
-    }
-
-    /**
-     * Prints the explanation carried by a rejected command, laid out like every
-     * other reply: one line at a time, each indented by a single space.
-     *
-     * @param error Exception describing what was wrong with the input.
-     */
-    private static void printError(VerityException error) {
-        for (String line : error.getMessage().split("\n")) {
-            System.out.println(" " + line);
-        }
-    }
-
-    /**
-     * Makes {@code System.out} write its text as UTF-8.
-     *
-     * <p>The banner is drawn with box-drawing characters, which are not part of
-     * the character set a Windows console uses by default; without this, the
-     * console prints each of them as a question mark. Replacing the standard
-     * output stream with one that is told to use UTF-8 keeps the banner
-     * readable whichever console the program is started from.
-     */
-    private static void useUtf8Output() {
-        FileOutputStream standardOutput = new FileOutputStream(FileDescriptor.out);
-        System.setOut(new PrintStream(standardOutput, true, StandardCharsets.UTF_8));
     }
 
     /**
@@ -205,13 +153,13 @@ public class Verity {
 
         if (commandWord.equals(COMMAND_BYE)) {
             requireNoArguments(arguments, COMMAND_BYE);
-            System.out.println(" Bye. Hope to see you again soon!");
+            ui.showGoodbye();
             return false;
         }
 
         if (commandWord.equals(COMMAND_LIST)) {
             requireNoArguments(arguments, COMMAND_LIST);
-            printTasks();
+            ui.showTaskList(tasks);
         } else if (commandWord.equals(COMMAND_MARK)) {
             markTask(arguments);
         } else if (commandWord.equals(COMMAND_UNMARK)) {
@@ -306,26 +254,6 @@ public class Verity {
     }
 
     /**
-     * Prints the banner and welcome message shown when Verity starts.
-     */
-    private static void printGreeting() {
-        System.out.println(BANNER);
-        System.out.println("Hello! I'm Verity");
-        System.out.println("What can I do for you?");
-        System.out.println(LINE);
-    }
-
-    /**
-     * Prints every task in the list, numbered from 1.
-     */
-    private void printTasks() {
-        System.out.println(" Here are the tasks in your list:");
-        for (int i = 1; i <= tasks.size(); i++) {
-            System.out.println(" " + i + "." + tasks.get(i));
-        }
-    }
-
-    /**
      * Marks the task named by a "mark &lt;task number&gt;" command as done.
      *
      * @param arguments Task number the user typed.
@@ -336,8 +264,7 @@ public class Verity {
     private void markTask(String arguments) throws VerityException {
         Task task = tasks.get(findTaskNumber(arguments, COMMAND_MARK));
         task.markAsDone();
-        System.out.println(" Nice! I've marked this task as done:");
-        System.out.println("   " + task);
+        ui.showTaskMarked(task);
         saveTasks();
     }
 
@@ -352,8 +279,7 @@ public class Verity {
     private void unmarkTask(String arguments) throws VerityException {
         Task task = tasks.get(findTaskNumber(arguments, COMMAND_UNMARK));
         task.markAsNotDone();
-        System.out.println(" OK, I've marked this task as not done yet:");
-        System.out.println("   " + task);
+        ui.showTaskUnmarked(task);
         saveTasks();
     }
 
@@ -368,9 +294,7 @@ public class Verity {
      */
     private void deleteTask(String arguments) throws VerityException {
         Task task = tasks.remove(findTaskNumber(arguments, COMMAND_DELETE));
-        System.out.println(" Noted. I've removed this task:");
-        System.out.println("   " + task);
-        System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
+        ui.showTaskDeleted(task, tasks.size());
         saveTasks();
     }
 
@@ -486,9 +410,7 @@ public class Verity {
      */
     private void addTask(Task task) throws VerityException {
         tasks.add(task);
-        System.out.println(" Got it. I've added this task:");
-        System.out.println("   " + task);
-        System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
+        ui.showTaskAdded(task, tasks.size());
         saveTasks();
     }
 
