@@ -37,6 +37,17 @@ public abstract class Task {
     public abstract String getTypeIcon();
 
     /**
+     * Returns true if this task's description contains the given keyword,
+     * ignoring the difference between upper and lower case, so that "book"
+     * also finds "Book".
+     *
+     * @param keyword Text to look for.
+     */
+    public boolean hasKeyword(String keyword) {
+        return description.toLowerCase().contains(keyword.toLowerCase());
+    }
+
+    /**
      * Marks this task as done.
      */
     public void markAsDone() {

@@ -368,7 +368,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  Sorry, I don't know what that means.
- Try: todo, deadline, event, list, mark, unmark, delete, bye.
+ Try: todo, deadline, event, list, find, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
@@ -396,7 +396,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  You pressed enter without typing a command.
- Try: todo, deadline, event, list, mark, unmark, delete, bye.
+ Try: todo, deadline, event, list, find, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
@@ -405,7 +405,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  You pressed enter without typing a command.
- Try: todo, deadline, event, list, mark, unmark, delete, bye.
+ Try: todo, deadline, event, list, find, mark, unmark, delete, bye.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
@@ -1984,6 +1984,101 @@ ____________________________________________________________
  Got it. I've added this task:
    [T][ ] task 101
  Now you have 101 tasks in the list.
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-32 Find tasks by a keyword in their description
+
+**Aim:** Verify that `find <keyword>` lists every task whose description contains the keyword, ignoring upper/lower case, and numbers each match by its position in the full list so it can be used with mark, unmark or delete.
+
+**Input:**
+
+```text
+todo read book
+todo join sports club
+deadline return Book /by 2019-06-06
+event book club meeting /from Mon 2pm /to 4pm
+mark 1
+find book
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] join sports club
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return Book (by: Jun 06 2019)
+ Now you have 3 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [E][ ] book club meeting (from: Mon 2pm to: 4pm)
+ Now you have 4 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Nice! I've marked this task as done:
+   [T][X] read book
+____________________________________________________________
+____________________________________________________________
+ Here are the matching tasks in your list:
+ 1.[T][X] read book
+ 3.[D][ ] return Book (by: Jun 06 2019)
+ 4.[E][ ] book club meeting (from: Mon 2pm to: 4pm)
+____________________________________________________________
+{{FAREWELL}}
+```
+
+### TC-33 Report a find with no keyword or no match
+
+**Aim:** Verify that `find` with nothing after it is refused with an example, and that a keyword no task contains, or a keyword that only appears in a due date rather than a description, is reported as having no matches.
+
+**Input:**
+
+```text
+find
+todo read book
+deadline return book /by 2019-06-06
+find homework
+find Jun
+bye
+```
+
+**Expected output:**
+
+```text
+{{GREETING}}
+____________________________________________________________
+ Tell me what to look for in your tasks' descriptions.
+ Try: find book
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [T][ ] read book
+ Now you have 1 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ Got it. I've added this task:
+   [D][ ] return book (by: Jun 06 2019)
+ Now you have 2 tasks in the list.
+____________________________________________________________
+____________________________________________________________
+ No task in your list has "homework" in its description.
+____________________________________________________________
+____________________________________________________________
+ No task in your list has "Jun" in its description.
 ____________________________________________________________
 {{FAREWELL}}
 ```

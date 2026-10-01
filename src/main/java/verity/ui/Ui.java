@@ -144,6 +144,25 @@ public class Ui {
     }
 
     /**
+     * Prints the tasks that matched a search, each with its number in the
+     * full list, or says that nothing matched.
+     *
+     * @param tasks Full task list the search was made in.
+     * @param taskNumbers Numbers of the matching tasks, counting from 1.
+     * @param keyword Text that was searched for, named if nothing matched.
+     */
+    public void showMatchingTasks(TaskList tasks, List<Integer> taskNumbers, String keyword) {
+        if (taskNumbers.isEmpty()) {
+            showMessage("No task in your list has \"" + keyword + "\" in its description.");
+            return;
+        }
+        showMessage("Here are the matching tasks in your list:");
+        for (int taskNumber : taskNumbers) {
+            showMessage(taskNumber + "." + tasks.get(taskNumber));
+        }
+    }
+
+    /**
      * Confirms that a task was added to the list.
      *
      * @param task Task that was added.

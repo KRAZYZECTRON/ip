@@ -12,8 +12,8 @@ import verity.ui.Ui;
 
 /**
  * Entry point for the Verity chatbot: a command-line task list that supports
- * adding to-dos, deadlines and events, listing them, marking them done or not
- * done, and deleting them. The list is saved to disk whenever it changes, and
+ * adding to-dos, deadlines and events, listing them, finding them by keyword,
+ * marking them done or not done, and deleting them. The list is saved to disk whenever it changes, and
  * loaded again when Verity starts.
  */
 public class Verity {
