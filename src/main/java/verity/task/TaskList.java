@@ -1,6 +1,7 @@
 package verity.task;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The list of tasks the user is keeping track of.
@@ -54,6 +55,25 @@ public class TaskList {
      */
     public boolean contains(int taskNumber) {
         return taskNumber >= 1 && taskNumber <= tasks.size();
+    }
+
+    /**
+     * Returns the numbers of the tasks whose description contains the given
+     * keyword, in list order. Numbers are returned rather than the tasks
+     * themselves so that each match can be shown with the number the user
+     * needs for mark, unmark or delete.
+     *
+     * @param keyword Text to look for, ignoring upper/lower case.
+     * @return Task numbers of the matches, counting from 1; empty if none match.
+     */
+    public List<Integer> find(String keyword) {
+        List<Integer> taskNumbers = new ArrayList<>();
+        for (int i = 1; i <= tasks.size(); i++) {
+            if (get(i).hasKeyword(keyword)) {
+                taskNumbers.add(i);
+            }
+        }
+        return taskNumbers;
     }
 
     /**

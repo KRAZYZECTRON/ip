@@ -8,6 +8,7 @@ import verity.command.AddCommand;
 import verity.command.Command;
 import verity.command.DeleteCommand;
 import verity.command.ExitCommand;
+import verity.command.FindCommand;
 import verity.command.ListCommand;
 import verity.command.MarkCommand;
 import verity.command.UnmarkCommand;
@@ -35,16 +36,18 @@ public class Parser {
     private static final String COMMAND_DEADLINE = "deadline";
     private static final String COMMAND_EVENT = "event";
     private static final String COMMAND_DELETE = "delete";
+    private static final String COMMAND_FIND = "find";
 
     /** Reminder of the commands on offer, added to messages that reject input. */
     private static final String COMMAND_HINT =
-            "Try: todo, deadline, event, list, mark, unmark, delete, bye.";
+            "Try: todo, deadline, event, list, find, mark, unmark, delete, bye.";
 
     // A correct example of each command that takes arguments, shown alongside
     // the complaint when the user's attempt at that command could not be read.
     public static final String EXAMPLE_TODO = "Try: todo borrow book";
     private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by 2019-12-02";
     private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
+    private static final String EXAMPLE_FIND = "Try: find book";
 
     // The keyword that separates one argument of a command from the next. The
     // surrounding spaces are deliberately not part of the keyword: a command
@@ -86,6 +89,8 @@ public class Parser {
             return new AddCommand(parseDeadline(arguments));
         case COMMAND_EVENT:
             return new AddCommand(parseEvent(arguments));
+        case COMMAND_FIND:
+            return new FindCommand(parseKeyword(arguments));
         default:
             throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
         }
@@ -161,6 +166,22 @@ public class Parser {
             throw new VerityException("\"" + arguments + "\" is not a task number.\n"
                     + "Try: " + commandWord + " 1");
         }
+    }
+
+    /**
+     * Reads the keyword a "find &lt;keyword&gt;" command searches for. The
+     * keyword may contain spaces, so "find return book" looks for that phrase.
+     *
+     * @param arguments Text the user typed after the command word.
+     * @return The keyword to search for.
+     * @throws VerityException If no keyword was given.
+     */
+    private static String parseKeyword(String arguments) throws VerityException {
+        if (arguments.isEmpty()) {
+            throw new VerityException("Tell me what to look for in your tasks' descriptions.\n"
+                    + EXAMPLE_FIND);
+        }
+        return arguments;
     }
 
     /**
