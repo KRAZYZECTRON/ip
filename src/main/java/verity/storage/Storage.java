@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,11 +23,12 @@ import verity.task.Todo;
  * {@value #FIELD_SEPARATOR}, for example:
  * <pre>
  * T | 1 | read book
- * D | 0 | return book | June 6th
+ * D | 0 | return book | 2019-12-02
  * E | 0 | project meeting | Aug 6th 2pm | 4pm
  * </pre>
  * The fields are the type icon, "1" if the task is done or "0" if not, the
- * description, and then the date/time details of that task type. A plain text
+ * description, and then the date/time details of that task type. A deadline's
+ * due date is written as yyyy-mm-dd. A plain text
  * format like this can be read and fixed by hand, which a binary format such as
  * Java object serialization could not.
  */
@@ -132,7 +135,8 @@ public class Storage {
      * @return The task the line describes.
      * @throws IllegalArgumentException If the line is not a valid saved task: a
      *         field is empty, the type is unknown, the number of fields does not
-     *         suit the type, or the done flag is neither "1" nor "0".
+     *         suit the type, the done flag is neither "1" nor "0", or a
+     *         deadline's due date is not in yyyy-mm-dd form.
      */
     private static Task parseTask(String line) {
         // The limit of -1 keeps empty fields at the end of the line, so that
@@ -156,7 +160,7 @@ public class Storage {
         if (type.equals("T") && fields.length == 3) {
             task = new Todo(description);
         } else if (type.equals("D") && fields.length == 4) {
-            task = new Deadline(description, fields[3]);
+            task = new Deadline(description, parseDate(fields[3]));
         } else if (type.equals("E") && fields.length == 5) {
             task = new Event(description, fields[3], fields[4]);
         } else {
@@ -169,5 +173,21 @@ public class Storage {
             throw new IllegalArgumentException("Done flag is not 1 or 0: " + line);
         }
         return task;
+    }
+
+    /**
+     * Reads a due date saved in the yyyy-mm-dd form.
+     *
+     * @param date Saved date.
+     * @return The date it names.
+     * @throws IllegalArgumentException If the text is not a real date in that
+     *         form, so that the line is skipped like any other unreadable one.
+     */
+    private static LocalDate parseDate(String date) {
+        try {
+            return LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Unreadable date: " + date, e);
+        }
     }
 }

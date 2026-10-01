@@ -1,5 +1,8 @@
 package verity.parser;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 import verity.VerityException;
 import verity.command.AddCommand;
 import verity.command.Command;
@@ -40,7 +43,7 @@ public class Parser {
     // A correct example of each command that takes arguments, shown alongside
     // the complaint when the user's attempt at that command could not be read.
     public static final String EXAMPLE_TODO = "Try: todo borrow book";
-    private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
+    private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by 2019-12-02";
     private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
 
     // The keyword that separates one argument of a command from the next. The
@@ -180,13 +183,14 @@ public class Parser {
 
     /**
      * Creates the deadline described by the arguments of a
-     * "deadline &lt;description&gt; /by &lt;when&gt;" command.
+     * "deadline &lt;description&gt; /by &lt;yyyy-mm-dd&gt;" command.
      *
-     * @param arguments Description and due date/time the user typed.
+     * @param arguments Description and due date the user typed.
      * @return The deadline described.
      * @throws VerityException If the description, the /by keyword or the due
-     *                         date is missing, or the arguments contain the
-     *                         field separator.
+     *                         date is missing, the due date is not a real
+     *                         date in yyyy-mm-dd form, or the arguments
+     *                         contain the field separator.
      */
     private static Deadline parseDeadline(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
@@ -212,7 +216,28 @@ public class Parser {
             throw new VerityException("A deadline needs a due date after the /by.\n"
                     + EXAMPLE_DEADLINE);
         }
-        return new Deadline(description, by);
+        return new Deadline(description, parseDate(by));
+    }
+
+    /**
+     * Reads a date written as yyyy-mm-dd, for example "2019-10-15".
+     *
+     * <p>Only this one format is accepted, so that a date such as "2/12/2019"
+     * is never read as the wrong day and month. A date that does not exist,
+     * such as "2019-02-30", is refused too.
+     *
+     * @param date Date the user typed.
+     * @return The date it names.
+     * @throws VerityException If the text is not a real date in yyyy-mm-dd form.
+     */
+    private static LocalDate parseDate(String date) throws VerityException {
+        try {
+            return LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            throw new VerityException("I can't read \"" + date + "\" as a date."
+                    + " Write the due date as yyyy-mm-dd.\n"
+                    + EXAMPLE_DEADLINE);
+        }
     }
 
     /**
