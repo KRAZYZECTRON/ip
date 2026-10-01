@@ -31,7 +31,7 @@ public class Verity {
      * its parts by {@code Path.of} rather than written as "data/verity.txt", so
      * that the separator between them suits the operating system.
      */
-    private static final Storage STORAGE = new Storage(Path.of("data", "verity.txt"));
+    private static final Path DATA_FILE = Path.of("data", "verity.txt");
 
     /** Block-letter banner spelling out the chatbot's name. */
     private static final String BANNER = """
@@ -71,16 +71,39 @@ public class Verity {
     private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
     private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
 
+    /** Reads and writes the task list on disk. */
+    private final Storage storage;
+
+    /** Tasks the user is keeping track of; every command works on this list. */
+    private TaskList tasks;
+
+    /**
+     * Creates a Verity chatbot that keeps its tasks in the given file.
+     *
+     * @param filePath File the tasks are loaded from and saved to.
+     */
+    public Verity(Path filePath) {
+        storage = new Storage(filePath);
+    }
+
     /**
      * Starts Verity and reads commands from standard input until "bye" is entered.
      *
      * @param args Not used.
      */
     public static void main(String[] args) {
+        new Verity(DATA_FILE).run();
+    }
+
+    /**
+     * Greets the user, loads the saved tasks, and then carries out commands
+     * from standard input until the user exits.
+     */
+    public void run() {
         useUtf8Output();
         printGreeting();
 
-        TaskList tasks = loadTasks();
+        tasks = loadTasks();
         Scanner scanner = new Scanner(System.in);
         boolean isRunning = true;
         while (isRunning) {
@@ -89,7 +112,7 @@ public class Verity {
             try {
                 // Spaces around the command are the user's slip, not a command
                 // of their own, so they are dropped before anything is read.
-                isRunning = executeCommand(input.trim(), tasks);
+                isRunning = executeCommand(input.trim());
             } catch (VerityException e) {
                 printError(e);
             }
@@ -108,10 +131,10 @@ public class Verity {
      * @return The saved tasks, or an empty list if there are none or the data
      *         file cannot be read.
      */
-    private static TaskList loadTasks() {
-        TaskList tasks;
+    private TaskList loadTasks() {
+        TaskList loadedTasks;
         try {
-            tasks = STORAGE.load();
+            loadedTasks = storage.load();
         } catch (IOException e) {
             System.out.println(" I couldn't read your saved tasks, so I'm starting with an empty list.");
             System.out.println(" They will be replaced the next time your list changes.");
@@ -119,7 +142,7 @@ public class Verity {
             return new TaskList();
         }
 
-        List<String> skippedLines = STORAGE.getSkippedLines();
+        List<String> skippedLines = storage.getSkippedLines();
         if (!skippedLines.isEmpty()) {
             System.out.println(" Some lines of your saved tasks are not in a form I can read,"
                     + " so I skipped them:");
@@ -129,7 +152,7 @@ public class Verity {
             System.out.println(" They will be left out the next time your list is saved.");
             System.out.println(LINE);
         }
-        return tasks;
+        return loadedTasks;
     }
 
     /**
@@ -162,13 +185,12 @@ public class Verity {
      * Carries out one command and prints its reply.
      *
      * @param input Whole line the user typed.
-     * @param tasks List of tasks the command works on.
      * @return True if Verity should keep reading commands, false if the user
      *         asked to exit.
      * @throws VerityException If the input is not a command that can be carried
      *                         out.
      */
-    private static boolean executeCommand(String input, TaskList tasks) throws VerityException {
+    private boolean executeCommand(String input) throws VerityException {
         if (input.isEmpty()) {
             throw new VerityException("You pressed enter without typing a command.\n" + COMMAND_HINT);
         }
@@ -189,19 +211,19 @@ public class Verity {
 
         if (commandWord.equals(COMMAND_LIST)) {
             requireNoArguments(arguments, COMMAND_LIST);
-            printTasks(tasks);
+            printTasks();
         } else if (commandWord.equals(COMMAND_MARK)) {
-            markTask(arguments, tasks);
+            markTask(arguments);
         } else if (commandWord.equals(COMMAND_UNMARK)) {
-            unmarkTask(arguments, tasks);
+            unmarkTask(arguments);
         } else if (commandWord.equals(COMMAND_TODO)) {
-            addTodo(arguments, tasks);
+            addTodo(arguments);
         } else if (commandWord.equals(COMMAND_DEADLINE)) {
-            addDeadline(arguments, tasks);
+            addDeadline(arguments);
         } else if (commandWord.equals(COMMAND_EVENT)) {
-            addEvent(arguments, tasks);
+            addEvent(arguments);
         } else if (commandWord.equals(COMMAND_DELETE)) {
-            deleteTask(arguments, tasks);
+            deleteTask(arguments);
         } else {
             throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
         }
@@ -253,16 +275,14 @@ public class Verity {
      * @param arguments Text the user typed after the command word.
      * @param commandWord Command the number belongs to, named in the message
      *                    shown if the number cannot be read.
-     * @param tasks List the number must name a task in.
      * @return The task number the user typed, known to name a task in the list.
      * @throws VerityException If the number is missing, is not a number, or
      *                         does not name a task in the list.
      */
-    private static int findTaskNumber(String arguments, String commandWord, TaskList tasks)
-            throws VerityException {
+    private int findTaskNumber(String arguments, String commandWord) throws VerityException {
         int taskNumber = readTaskNumber(arguments, commandWord);
         if (!tasks.contains(taskNumber)) {
-            throw new VerityException(describeMissingTask(taskNumber, tasks));
+            throw new VerityException(describeMissingTask(taskNumber));
         }
         return taskNumber;
     }
@@ -272,9 +292,8 @@ public class Verity {
      * telling the user which numbers they can use instead.
      *
      * @param taskNumber Number the user asked for.
-     * @param tasks List the number was looked up in.
      */
-    private static String describeMissingTask(int taskNumber, TaskList tasks) {
+    private String describeMissingTask(int taskNumber) {
         if (tasks.size() == 0) {
             return "There is no task " + taskNumber + ", because your list is empty.\n"
                     + EXAMPLE_TODO;
@@ -298,10 +317,8 @@ public class Verity {
 
     /**
      * Prints every task in the list, numbered from 1.
-     *
-     * @param tasks List of tasks to print.
      */
-    private static void printTasks(TaskList tasks) {
+    private void printTasks() {
         System.out.println(" Here are the tasks in your list:");
         for (int i = 1; i <= tasks.size(); i++) {
             System.out.println(" " + i + "." + tasks.get(i));
@@ -312,34 +329,32 @@ public class Verity {
      * Marks the task named by a "mark &lt;task number&gt;" command as done.
      *
      * @param arguments Task number the user typed.
-     * @param tasks List holding the task to mark.
      * @throws VerityException If the task number is missing, unreadable, or
      *                         does not name a task in the list, or the
      *                         change could not be saved.
      */
-    private static void markTask(String arguments, TaskList tasks) throws VerityException {
-        Task task = tasks.get(findTaskNumber(arguments, COMMAND_MARK, tasks));
+    private void markTask(String arguments) throws VerityException {
+        Task task = tasks.get(findTaskNumber(arguments, COMMAND_MARK));
         task.markAsDone();
         System.out.println(" Nice! I've marked this task as done:");
         System.out.println("   " + task);
-        saveTasks(tasks);
+        saveTasks();
     }
 
     /**
      * Marks the task named by an "unmark &lt;task number&gt;" command as not done.
      *
      * @param arguments Task number the user typed.
-     * @param tasks List holding the task to unmark.
      * @throws VerityException If the task number is missing, unreadable, or
      *                         does not name a task in the list, or the
      *                         change could not be saved.
      */
-    private static void unmarkTask(String arguments, TaskList tasks) throws VerityException {
-        Task task = tasks.get(findTaskNumber(arguments, COMMAND_UNMARK, tasks));
+    private void unmarkTask(String arguments) throws VerityException {
+        Task task = tasks.get(findTaskNumber(arguments, COMMAND_UNMARK));
         task.markAsNotDone();
         System.out.println(" OK, I've marked this task as not done yet:");
         System.out.println("   " + task);
-        saveTasks(tasks);
+        saveTasks();
     }
 
     /**
@@ -347,35 +362,33 @@ public class Verity {
      * tasks after it are renumbered to close the gap.
      *
      * @param arguments Task number the user typed.
-     * @param tasks List holding the task to delete.
      * @throws VerityException If the task number is missing, unreadable, or
      *                         does not name a task in the list, or the
      *                         change could not be saved.
      */
-    private static void deleteTask(String arguments, TaskList tasks) throws VerityException {
-        Task task = tasks.remove(findTaskNumber(arguments, COMMAND_DELETE, tasks));
+    private void deleteTask(String arguments) throws VerityException {
+        Task task = tasks.remove(findTaskNumber(arguments, COMMAND_DELETE));
         System.out.println(" Noted. I've removed this task:");
         System.out.println("   " + task);
         System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
-        saveTasks(tasks);
+        saveTasks();
     }
 
     /**
      * Adds the to-do described by a "todo &lt;description&gt;" command.
      *
      * @param arguments Description the user typed.
-     * @param tasks List to add the task to.
      * @throws VerityException If no description was given, the description
      *                         contains the field separator, or the task could
      *                         not be saved.
      */
-    private static void addTodo(String arguments, TaskList tasks) throws VerityException {
+    private void addTodo(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A todo needs a description saying what to do.\n"
                     + EXAMPLE_TODO);
         }
         rejectFieldSeparator(arguments, EXAMPLE_TODO);
-        addTask(new Todo(arguments), tasks);
+        addTask(new Todo(arguments));
     }
 
     /**
@@ -383,12 +396,11 @@ public class Verity {
      * "deadline &lt;description&gt; /by &lt;when&gt;" command.
      *
      * @param arguments Description and due date/time the user typed.
-     * @param tasks List to add the task to.
      * @throws VerityException If the description, the /by keyword or the due
      *                         date is missing, the arguments contain the field
      *                         separator, or the task could not be saved.
      */
-    private static void addDeadline(String arguments, TaskList tasks) throws VerityException {
+    private void addDeadline(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A deadline needs a description and a due date.\n"
                     + EXAMPLE_DEADLINE);
@@ -412,7 +424,7 @@ public class Verity {
             throw new VerityException("A deadline needs a due date after the /by.\n"
                     + EXAMPLE_DEADLINE);
         }
-        addTask(new Deadline(description, by), tasks);
+        addTask(new Deadline(description, by));
     }
 
     /**
@@ -420,13 +432,12 @@ public class Verity {
      * "event &lt;description&gt; /from &lt;start&gt; /to &lt;end&gt;" command.
      *
      * @param arguments Description, start and end date/time the user typed.
-     * @param tasks List to add the task to.
      * @throws VerityException If the description, either keyword, the start or
      *                         the end is missing, the two keywords are the
      *                         wrong way round, the arguments contain the field
      *                         separator, or the task could not be saved.
      */
-    private static void addEvent(String arguments, TaskList tasks) throws VerityException {
+    private void addEvent(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("An event needs a description, a start and an end.\n"
                     + EXAMPLE_EVENT);
@@ -463,23 +474,22 @@ public class Verity {
             throw new VerityException("An event needs an end after the /to.\n"
                     + EXAMPLE_EVENT);
         }
-        addTask(new Event(description, from, to), tasks);
+        addTask(new Event(description, from, to));
     }
 
     /**
      * Adds a task to the list and prints the confirmation shown to the user.
      *
      * @param task Task to add.
-     * @param tasks List to add the task to.
      * @throws VerityException If the task was added but the list could not be
      *                         saved.
      */
-    private static void addTask(Task task, TaskList tasks) throws VerityException {
+    private void addTask(Task task) throws VerityException {
         tasks.add(task);
         System.out.println(" Got it. I've added this task:");
         System.out.println("   " + task);
         System.out.println(" Now you have " + tasks.size() + " tasks in the list.");
-        saveTasks(tasks);
+        saveTasks();
     }
 
     /**
@@ -506,12 +516,11 @@ public class Verity {
      * if saving fails the user sees both that the change was made and that it
      * will not outlast the session.
      *
-     * @param tasks Tasks to save.
      * @throws VerityException If the list could not be written to disk.
      */
-    private static void saveTasks(TaskList tasks) throws VerityException {
+    private void saveTasks() throws VerityException {
         try {
-            STORAGE.save(tasks);
+            storage.save(tasks);
         } catch (IOException e) {
             throw new VerityException("I couldn't save your tasks to disk, so this change"
                     + " will be lost when you exit.");
