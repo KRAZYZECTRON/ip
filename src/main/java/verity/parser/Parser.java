@@ -1,14 +1,21 @@
 package verity.parser;
 
 import verity.VerityException;
+import verity.command.AddCommand;
+import verity.command.Command;
+import verity.command.DeleteCommand;
+import verity.command.ExitCommand;
+import verity.command.ListCommand;
+import verity.command.MarkCommand;
+import verity.command.UnmarkCommand;
 import verity.storage.Storage;
 import verity.task.Deadline;
 import verity.task.Event;
 import verity.task.Todo;
 
 /**
- * Makes sense of the commands the user types: splits a line into its command
- * word and arguments, and turns those arguments into task numbers and tasks.
+ * Makes sense of the commands the user types, turning each line into a
+ * {@link Command} that is ready to be carried out.
  *
  * <p>Every check on what the user typed is made here, so a command that gets
  * as far as being carried out is known to be well formed. The methods are
@@ -17,24 +24,24 @@ import verity.task.Todo;
  */
 public class Parser {
     // The word the user types to choose a command.
-    public static final String COMMAND_BYE = "bye";
-    public static final String COMMAND_LIST = "list";
-    public static final String COMMAND_MARK = "mark";
-    public static final String COMMAND_UNMARK = "unmark";
-    public static final String COMMAND_TODO = "todo";
-    public static final String COMMAND_DEADLINE = "deadline";
-    public static final String COMMAND_EVENT = "event";
-    public static final String COMMAND_DELETE = "delete";
+    private static final String COMMAND_BYE = "bye";
+    private static final String COMMAND_LIST = "list";
+    private static final String COMMAND_MARK = "mark";
+    private static final String COMMAND_UNMARK = "unmark";
+    private static final String COMMAND_TODO = "todo";
+    private static final String COMMAND_DEADLINE = "deadline";
+    private static final String COMMAND_EVENT = "event";
+    private static final String COMMAND_DELETE = "delete";
 
     /** Reminder of the commands on offer, added to messages that reject input. */
-    public static final String COMMAND_HINT =
+    private static final String COMMAND_HINT =
             "Try: todo, deadline, event, list, mark, unmark, delete, bye.";
 
     // A correct example of each command that takes arguments, shown alongside
     // the complaint when the user's attempt at that command could not be read.
     public static final String EXAMPLE_TODO = "Try: todo borrow book";
-    public static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
-    public static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
+    private static final String EXAMPLE_DEADLINE = "Try: deadline return book /by Sunday";
+    private static final String EXAMPLE_EVENT = "Try: event project meeting /from Mon 2pm /to 4pm";
 
     // The keyword that separates one argument of a command from the next. The
     // surrounding spaces are deliberately not part of the keyword: a command
@@ -43,6 +50,43 @@ public class Parser {
     private static final String KEYWORD_BY = "/by";
     private static final String KEYWORD_FROM = "/from";
     private static final String KEYWORD_TO = "/to";
+
+    /**
+     * Returns the command described by a line the user typed.
+     *
+     * @param input Whole line the user typed, without surrounding spaces.
+     * @return The command, ready to be carried out.
+     * @throws VerityException If the line is empty, the command word is not
+     *                         known, or the command's arguments are not in
+     *                         the form it needs.
+     */
+    public static Command parse(String input) throws VerityException {
+        String commandWord = getCommandWord(input);
+        String arguments = getArguments(input);
+
+        switch (commandWord) {
+        case COMMAND_BYE:
+            requireNoArguments(arguments, COMMAND_BYE);
+            return new ExitCommand();
+        case COMMAND_LIST:
+            requireNoArguments(arguments, COMMAND_LIST);
+            return new ListCommand();
+        case COMMAND_MARK:
+            return new MarkCommand(parseTaskNumber(arguments, COMMAND_MARK));
+        case COMMAND_UNMARK:
+            return new UnmarkCommand(parseTaskNumber(arguments, COMMAND_UNMARK));
+        case COMMAND_DELETE:
+            return new DeleteCommand(parseTaskNumber(arguments, COMMAND_DELETE));
+        case COMMAND_TODO:
+            return new AddCommand(parseTodo(arguments));
+        case COMMAND_DEADLINE:
+            return new AddCommand(parseDeadline(arguments));
+        case COMMAND_EVENT:
+            return new AddCommand(parseEvent(arguments));
+        default:
+            throw new VerityException("Sorry, I don't know what that means.\n" + COMMAND_HINT);
+        }
+    }
 
     /**
      * Returns the word that chooses the command: everything up to the first
@@ -56,7 +100,7 @@ public class Parser {
      * @return The command word.
      * @throws VerityException If the input is empty.
      */
-    public static String getCommandWord(String input) throws VerityException {
+    private static String getCommandWord(String input) throws VerityException {
         if (input.isEmpty()) {
             throw new VerityException("You pressed enter without typing a command.\n" + COMMAND_HINT);
         }
@@ -71,7 +115,7 @@ public class Parser {
      *
      * @param input Whole line the user typed, without surrounding spaces.
      */
-    public static String getArguments(String input) {
+    private static String getArguments(String input) {
         int firstSpace = input.indexOf(' ');
         return (firstSpace < 0) ? "" : input.substring(firstSpace + 1).trim();
     }
@@ -83,7 +127,7 @@ public class Parser {
      * @param commandWord Command that was typed, named in the message shown.
      * @throws VerityException If anything was typed after the command word.
      */
-    public static void requireNoArguments(String arguments, String commandWord) throws VerityException {
+    private static void requireNoArguments(String arguments, String commandWord) throws VerityException {
         if (!arguments.isEmpty()) {
             throw new VerityException("The " + commandWord + " command takes nothing after it,"
                     + " but you added \"" + arguments + "\".\n"
@@ -103,7 +147,7 @@ public class Parser {
      * @throws VerityException If no number was given, or what was given is not
      *                         a whole number.
      */
-    public static int parseTaskNumber(String arguments, String commandWord) throws VerityException {
+    private static int parseTaskNumber(String arguments, String commandWord) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("Tell me which task to " + commandWord + ", by its number.\n"
                     + "Try: " + commandWord + " 1");
@@ -125,7 +169,7 @@ public class Parser {
      * @throws VerityException If no description was given, or it contains the
      *                         field separator.
      */
-    public static Todo parseTodo(String arguments) throws VerityException {
+    private static Todo parseTodo(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A todo needs a description saying what to do.\n"
                     + EXAMPLE_TODO);
@@ -144,7 +188,7 @@ public class Parser {
      *                         date is missing, or the arguments contain the
      *                         field separator.
      */
-    public static Deadline parseDeadline(String arguments) throws VerityException {
+    private static Deadline parseDeadline(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("A deadline needs a description and a due date.\n"
                     + EXAMPLE_DEADLINE);
@@ -182,7 +226,7 @@ public class Parser {
      *                         wrong way round, or the arguments contain the
      *                         field separator.
      */
-    public static Event parseEvent(String arguments) throws VerityException {
+    private static Event parseEvent(String arguments) throws VerityException {
         if (arguments.isEmpty()) {
             throw new VerityException("An event needs a description, a start and an end.\n"
                     + EXAMPLE_EVENT);
