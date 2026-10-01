@@ -110,12 +110,12 @@ ____________________________________________________________
 
 ### TC-03 Add a deadline
 
-**Aim:** Verify that `deadline <description> /by <when>` adds a task with the `[D]` icon and shows the due date after the description.
+**Aim:** Verify that `deadline <description> /by <yyyy-mm-dd>` adds a task with the `[D]` icon and shows the due date after the description, written as `MMM dd yyyy`.
 
 **Input:**
 
 ```text
-deadline return book /by Sunday
+deadline return book /by 2019-12-02
 bye
 ```
 
@@ -125,7 +125,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: Sunday)
+   [D][ ] return book (by: Dec 02 2019)
  Now you have 1 tasks in the list.
 ____________________________________________________________
 {{FAREWELL}}
@@ -154,14 +154,17 @@ ____________________________________________________________
 {{FAREWELL}}
 ```
 
-### TC-05 Accept a date that is not a real date
+### TC-05 Reject a due date that is not a yyyy-mm-dd date
 
-**Aim:** Verify that dates/times are stored as free text, so a deadline such as `no idea :-p` is accepted and echoed back unchanged.
+**Aim:** Verify that a deadline is refused, with the format to use, when its due date is free text, a date in another format, or a date that does not exist, and that a valid date after the refusals is accepted.
 
 **Input:**
 
 ```text
 deadline do homework /by no idea :-p
+deadline do homework /by 2/12/2019
+deadline do homework /by 2019-02-30
+deadline do homework /by 2019-10-15
 bye
 ```
 
@@ -170,8 +173,20 @@ bye
 ```text
 {{GREETING}}
 ____________________________________________________________
+ I can't read "no idea :-p" as a date. Write the due date as yyyy-mm-dd.
+ Try: deadline return book /by 2019-12-02
+____________________________________________________________
+____________________________________________________________
+ I can't read "2/12/2019" as a date. Write the due date as yyyy-mm-dd.
+ Try: deadline return book /by 2019-12-02
+____________________________________________________________
+____________________________________________________________
+ I can't read "2019-02-30" as a date. Write the due date as yyyy-mm-dd.
+ Try: deadline return book /by 2019-12-02
+____________________________________________________________
+____________________________________________________________
  Got it. I've added this task:
-   [D][ ] do homework (by: no idea :-p)
+   [D][ ] do homework (by: Oct 15 2019)
  Now you have 1 tasks in the list.
 ____________________________________________________________
 {{FAREWELL}}
@@ -207,7 +222,7 @@ ____________________________________________________________
 ```text
 todo read book
 mark 1
-deadline return book /by June 6th
+deadline return book /by 2019-06-06
 event project meeting /from Aug 6th 2pm /to 4pm
 todo join sports club
 mark 4
@@ -231,7 +246,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: June 6th)
+   [D][ ] return book (by: Jun 06 2019)
  Now you have 2 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
@@ -256,7 +271,7 @@ ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
- 2.[D][ ] return book (by: June 6th)
+ 2.[D][ ] return book (by: Jun 06 2019)
  3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
  4.[T][X] join sports club
  5.[T][ ] borrow book
@@ -304,7 +319,7 @@ ____________________________________________________________
 **Input:**
 
 ```text
-deadline return book /by Sunday
+deadline return book /by 2019-12-02
 mark 1
 unmark 1
 list
@@ -317,20 +332,20 @@ bye
 {{GREETING}}
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: Sunday)
+   [D][ ] return book (by: Dec 02 2019)
  Now you have 1 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
  Nice! I've marked this task as done:
-   [D][X] return book (by: Sunday)
+   [D][X] return book (by: Dec 02 2019)
 ____________________________________________________________
 ____________________________________________________________
  OK, I've marked this task as not done yet:
-   [D][ ] return book (by: Sunday)
+   [D][ ] return book (by: Dec 02 2019)
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
- 1.[D][ ] return book (by: Sunday)
+ 1.[D][ ] return book (by: Dec 02 2019)
 ____________________________________________________________
 {{FAREWELL}}
 ```
@@ -474,9 +489,9 @@ ____________________________________________________________
 ```text
 deadline
 deadline return book
-deadline /by Sunday
+deadline /by 2019-12-02
 deadline return book /by
-deadline return book /by Sunday
+deadline return book /by 2019-12-02
 list
 bye
 ```
@@ -487,28 +502,28 @@ bye
 {{GREETING}}
 ____________________________________________________________
  A deadline needs a description and a due date.
- Try: deadline return book /by Sunday
+ Try: deadline return book /by 2019-12-02
 ____________________________________________________________
 ____________________________________________________________
  I can't tell when "return book" is due. Mark the due date with /by.
- Try: deadline return book /by Sunday
+ Try: deadline return book /by 2019-12-02
 ____________________________________________________________
 ____________________________________________________________
  A deadline needs a description before the /by.
- Try: deadline return book /by Sunday
+ Try: deadline return book /by 2019-12-02
 ____________________________________________________________
 ____________________________________________________________
  A deadline needs a due date after the /by.
- Try: deadline return book /by Sunday
+ Try: deadline return book /by 2019-12-02
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: Sunday)
+   [D][ ] return book (by: Dec 02 2019)
  Now you have 1 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
- 1.[D][ ] return book (by: Sunday)
+ 1.[D][ ] return book (by: Dec 02 2019)
 ____________________________________________________________
 {{FAREWELL}}
 ```
@@ -746,7 +761,7 @@ ____________________________________________________________
 
 ```text
 todo read book
-deadline return book /by June 6th
+deadline return book /by 2019-06-06
 event project meeting /from Aug 6th 2pm /to 4pm
 todo join sports club
 todo borrow book
@@ -772,7 +787,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: June 6th)
+   [D][ ] return book (by: Jun 06 2019)
  Now you have 2 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
@@ -796,7 +811,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Nice! I've marked this task as done:
-   [D][X] return book (by: June 6th)
+   [D][X] return book (by: Jun 06 2019)
 ____________________________________________________________
 ____________________________________________________________
  Nice! I've marked this task as done:
@@ -805,7 +820,7 @@ ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
- 2.[D][X] return book (by: June 6th)
+ 2.[D][X] return book (by: Jun 06 2019)
  3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
  4.[T][X] join sports club
  5.[T][ ] borrow book
@@ -818,7 +833,7 @@ ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
- 2.[D][X] return book (by: June 6th)
+ 2.[D][X] return book (by: Jun 06 2019)
  3.[T][X] join sports club
  4.[T][ ] borrow book
 ____________________________________________________________
@@ -829,7 +844,7 @@ ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
- 2.[D][X] return book (by: June 6th)
+ 2.[D][X] return book (by: Jun 06 2019)
  3.[T][X] join sports club
  4.[T][X] borrow book
 ____________________________________________________________
@@ -975,7 +990,7 @@ ____________________________________________________________
 
 ```text
 todo read book
-deadline return book /by June 6th
+deadline return book /by 2019-06-06
 event project meeting /from Aug 6th 2pm /to 4pm
 mark 2
 bye
@@ -992,7 +1007,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Got it. I've added this task:
-   [D][ ] return book (by: June 6th)
+   [D][ ] return book (by: Jun 06 2019)
  Now you have 2 tasks in the list.
 ____________________________________________________________
 ____________________________________________________________
@@ -1002,7 +1017,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Nice! I've marked this task as done:
-   [D][X] return book (by: June 6th)
+   [D][X] return book (by: Jun 06 2019)
 ____________________________________________________________
 {{FAREWELL}}
 ```
@@ -1011,7 +1026,7 @@ ____________________________________________________________
 
 ```text
 T | 0 | read book
-D | 1 | return book | June 6th
+D | 1 | return book | 2019-06-06
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 ```
 
@@ -1079,7 +1094,7 @@ ____________________________________________________________
 ____________________________________________________________
 ____________________________________________________________
  Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
- Try: deadline return book /by Sunday
+ Try: deadline return book /by 2019-12-02
 ____________________________________________________________
 ____________________________________________________________
  Sorry, I can't store the | character, because I use it to separate the parts of a saved task.
@@ -1124,7 +1139,7 @@ bye
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
- 2.[D][ ] return book (by: June 6th)
+ 2.[D][ ] return book (by: Jun 06 2019)
  3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
  4.[T][X] join sports club
 ____________________________________________________________
@@ -1140,7 +1155,7 @@ ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][ ] read book
- 2.[D][ ] return book (by: June 6th)
+ 2.[D][ ] return book (by: Jun 06 2019)
  3.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
  4.[T][X] join sports club
  5.[T][ ] borrow book
@@ -1152,7 +1167,7 @@ ____________________________________________________________
 
 ```text
 T | 1 | read book
-D | 0 | return book | June 6th
+D | 0 | return book | 2019-06-06
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 T | 1 | join sports club
 ```
@@ -1161,7 +1176,7 @@ T | 1 | join sports club
 
 ```text
 T | 0 | read book
-D | 0 | return book | June 6th
+D | 0 | return book | 2019-06-06
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 T | 1 | join sports club
 T | 0 | borrow book
@@ -1207,7 +1222,7 @@ T | 0 | read book
 
 ### TC-28 Skip unreadable lines in a corrupted data file
 
-**Aim:** Verify that lines of the data file that are not valid tasks — an unknown type, too few or too many fields for the type, a done flag other than 1 or 0, an empty field, or plain text — are skipped and listed by line number at start-up, that blank lines are ignored silently, that the valid lines around them still load, and that the file is not rewritten while the list does not change.
+**Aim:** Verify that lines of the data file that are not valid tasks — an unknown type, too few or too many fields for the type, a done flag other than 1 or 0, an empty field, a deadline whose date is not in yyyy-mm-dd form, or plain text — are skipped and listed by line number at start-up, that blank lines are ignored silently, that the valid lines around them still load, and that the file is not rewritten while the list does not change.
 
 **Input:**
 
@@ -1225,15 +1240,16 @@ bye
    line 3: D | 0 | return book
    line 4: T | yes | join sports club
    line 7: T | 0 |
-   line 8: D | 0 | return book | June 6th | extra
+   line 8: D | 0 | return book | 2019-06-06 | extra
    line 9: just some text
+   line 11: D | 0 | submit report | Sunday
  They will be left out the next time your list is saved.
 ____________________________________________________________
 ____________________________________________________________
  Here are the tasks in your list:
  1.[T][X] read book
  2.[E][ ] project meeting (from: Aug 6th 2pm to: 4pm)
- 3.[D][X] return book (by: June 6th)
+ 3.[D][X] return book (by: Jun 06 2019)
 ____________________________________________________________
 {{FAREWELL}}
 ```
@@ -1248,9 +1264,10 @@ T | yes | join sports club
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 
 T | 0 |
-D | 0 | return book | June 6th | extra
+D | 0 | return book | 2019-06-06 | extra
 just some text
-D | 1 | return book | June 6th
+D | 1 | return book | 2019-06-06
+D | 0 | submit report | Sunday
 ```
 
 **Saved data after:**
@@ -1263,9 +1280,10 @@ T | yes | join sports club
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 
 T | 0 |
-D | 0 | return book | June 6th | extra
+D | 0 | return book | 2019-06-06 | extra
 just some text
-D | 1 | return book | June 6th
+D | 1 | return book | 2019-06-06
+D | 0 | submit report | Sunday
 ```
 
 ### TC-29 Drop unreadable lines once the list changes
@@ -1326,7 +1344,7 @@ bye
 {{GREETING}}
 ____________________________________________________________
  Noted. I've removed this task:
-   [D][ ] return book (by: June 6th)
+   [D][ ] return book (by: Jun 06 2019)
  Now you have 2 tasks in the list.
 ____________________________________________________________
 {{FAREWELL}}
@@ -1336,7 +1354,7 @@ ____________________________________________________________
 
 ```text
 T | 1 | read book
-D | 0 | return book | June 6th
+D | 0 | return book | 2019-06-06
 E | 0 | project meeting | Aug 6th 2pm | 4pm
 ```
 
